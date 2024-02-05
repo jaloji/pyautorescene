@@ -738,6 +738,7 @@ def check_dir(args, fpath):
                 release_list[release['release']]['resubs'] = True
 
     if (args['check_extras']) and not release_list[release['release']]['resample']:
+        proof_path = ""
         if proof_path != "":
             #we try check if proof on local disk is good
             verbose("\t - Searching for Proof on local disk")
