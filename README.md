@@ -69,4 +69,5 @@ If you have a dynamic IP or you encounter a disconnection which causes an error 
 
 To Do
 -----
+Create a .sh script that does exactly the same thing as the .bat (I don't use this script on Linux so I will have to find where the generic temp files are to have a reliable path that works for everyone)
 Make a better code for Subs reconstruction/check -> Working but little bugged, I'm not sure that will work with all subbed releases.
