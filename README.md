@@ -65,7 +65,15 @@ optional arguments:
   --keep-srr            keep srr in output directory
   --keep-srs            keep srs in output directory
 ```
-If you have a dynamic IP or you encounter a disconnection which causes an error like connect fail unknow (s) something then just double click on the bat file and relaunch the script **but before you need to edit it and change the username in the path by your own!**
+
+If you have a dynamic IP or you encounter a disconnection which causes an error like this:
+
+```
+- Connecting srrdb.com...  [FAIL]  -> ValueError() takes no keyword arguments
+- Searching srrdb.com for matching Release: release.name  [FAIL]  -> name 's' is not defined
+```
+
+Then just double click on the bat file and relaunch the script **but before you need to edit it and change the username in the path by your own!**
 
 To Do
 -----
