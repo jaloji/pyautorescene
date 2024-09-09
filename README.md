@@ -12,7 +12,7 @@ Requirements
 ------------
 The main requirement is that you have already installed PyReScene from source as per the [instructions](https://web.archive.org/web/20190118053832/https://bitbucket.org/Gfy/pyrescene/src/).  This tool does not work with the pre-compiled .exes.
 
-And for compressed RAR use these two WinRaR setup pack [<=4.20 + betas](http://www.mediafire.com/?ooedhgdei3cm72u) and [5.50b1 up to 7.00b4](https://www.mediafire.com/file/jvgoh37eq71d6og/RARSETUP-X64-511%252B550b1-to-700b4.rar) and use this powershell script [preprardir.ps1](https://github.com/MRiCEQB/PS_preprardir), You just need to extract these pack and in cmd with admin right put: `powershell -executionpolicy bypass -File .\preprardir.ps1`. This tool does not work with the pre-compiled .exes.
+And for compressed RAR use these two WinRaR setup pack [<=4.20 + betas](http://www.mediafire.com/?ooedhgdei3cm72u) and [5.50b1 up to 7.00b4](https://www.mediafire.com/file/jvgoh37eq71d6og/RARSETUP-X64-511%252B550b1-to-700b4.rar) and use this powershell script [preprardir.ps1](https://github.com/MRiCEQB/PS_preprardir), You just need to extract these pack and in cmd with admin right put: `powershell -executionpolicy bypass -File .\preprardir.ps1`.
 
 Installation
 ------------
