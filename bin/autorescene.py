@@ -462,6 +462,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
         # Reconstruct the second RAR if we have multiple .rar inside the Subs .rar
         if len(sub_srr_2) > 1:
             verbose("\t - Reconstructing second RAR for Subs")
+            rename_hints_subs = {subs_srr.filename: get_first_rar_name(subs_srr.get_rars_name())}
             reconstruct_rar(subs_srr, os.path.join(os.path.dirname(sub_srr_2[0]), rar_name_2[0]), sub_file, rename_hints_subs)
         # Reconstruct the second RAR if we have one .rar inside the Subs .rar
         else:
