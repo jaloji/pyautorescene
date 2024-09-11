@@ -11,6 +11,12 @@ from requests.adapters import HTTPAdapter
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
 
+DEFAULT_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+DEFAULT_SESSION_APPENDIX = "_session.dat"
+DEFAULT_MAX_SESSION_TIME = 30 * 60  # 30 minutes
+RETRY_STATUS_CODES = [408, 429, 444, 498, 499, 500, 502, 503, 504]
+RETRIES = Retry(total=5, backoff_factor=0.5, respect_retry_after_header=False, status_forcelist=RETRY_STATUS_CODES)
+
 class SRRDB_LOGIN:
     """
 	https://stackoverflow.com/questions/12737740/python-requests-and-persistent-sessions
@@ -23,13 +29,12 @@ class SRRDB_LOGIN:
                  loginData,
                  loginTestUrl,
                  loginTestString,
-                 sessionFileAppendix = "_session.dat",
-                 maxSessionTimeSeconds = 30 * 60,
+                 sessionFileAppendix = DEFAULT_SESSION_APPENDIX,
+                 maxSessionTimeSeconds = DEFAULT_MAX_SESSION_TIME,
                  proxies = None,
-                 userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
+                 userAgent = DEFAULT_USER_AGENT,
                  debug = False,
-                 forceLogin = False,
-                 **kwargs):
+                 forceLogin = False):
         """
         save some information needed to login the session
         you'll have to provide 'loginTestString' which will be looked for in the
@@ -40,144 +45,71 @@ class SRRDB_LOGIN:
         """
         urlData = urlparse(loginUrl)
 
-        self.proxies = proxies
+        self.loginUrl = loginUrl
         self.loginData = loginData
-        self.loginUrl = loginUrl
         self.loginTestUrl = loginTestUrl
-        self.maxSessionTime = maxSessionTimeSeconds
-        file = tempfile.gettempdir()
-        self.sessionFile = os.path.join(file, urlData.netloc + sessionFileAppendix)
-        self.userAgent = userAgent
         self.loginTestString = loginTestString
-        self.debug = debug
-        self.retries = Retry(total = 5, backoff_factor = 0.5, respect_retry_after_header = False, status_forcelist = [408, 429, 444, 498, 499, 500, 502, 503, 504])
-
-        self.login(forceLogin, **kwargs)
-
-    def modification_date(self, filename):
-        t = os.path.getmtime(filename)
-        return datetime.datetime.fromtimestamp(t)
-
-    def login(self, forceLogin = False, **kwargs):
-        wasReadFromCache = False
-        if self.debug:
-            print("\n\t - Loading or generating session...")
-        if os.path.exists(self.sessionFile) and not forceLogin:
-            time = self.modification_date(self.sessionFile)         
-
-            # only load if file less than 30 minutes old
-            lastModification = (datetime.datetime.now() - time).seconds
-            if lastModification < self.maxSessionTime:
-                with open(self.sessionFile, 'rb') as f:
-                    self.session = pickle.load(f)
-                    wasReadFromCache = True
-                    if self.debug:
-                        print("\t - Loaded session from cache (last access %ds ago)" % lastModification, end="")
-
-        if not wasReadFromCache:
-            self.session = requests.Session()
-            self.session.headers.update({"user-agent" : self.userAgent})
-            self.session.mount('https://', HTTPAdapter(max_retries=self.retries))
-
-            res = self.session.post(self.loginUrl, data = self.loginData, proxies = self.proxies, **kwargs)
-
-            if self.debug:
-                print("\t - Created new session with login")
-            self.saveSessionToCache()
-
-        # test login
-        res = self.session.get(self.loginTestUrl)
-        if res.text.lower().find(self.loginTestString.lower()) < 0:
-            raise ValueError("Could not log into provided site '%s' (did not find successful login string)" % self.loginUrl, end="")
-
-    def saveSessionToCache(self):
-        # always save (to update timeout)
-        with open(self.sessionFile, "wb") as f:
-            pickle.dump(self.session, f)
-            if self.debug:
-                print("\n\t - Updated session cache-file %s " % self.sessionFile, end="")
-
-    def retrieveContent(self, url, method = "get", postData = None, **kwargs):
-        if method == 'get':
-            res = self.session.get(url , proxies = self.proxies, **kwargs)
-        else:
-            res = self.session.post(url , data = postData, proxies = self.proxies, **kwargs)
-
-        # the session has been updated on the server, so also update in cache
-        self.saveSessionToCache()
-
-        return res
-
-class SRRDB_WITHOUT_LOGIN:
-    """
-    s = SRRDB_WITHOUT_LOGIN(utils.res.loginTestUrl)
-    """
-    def __init__(self,
-                 loginUrl,
-                 sessionFileAppendix = "_session.dat",
-                 maxSessionTimeSeconds = 30 * 60,
-                 proxies = None,
-                 userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36",
-                 debug = False,
-                 forceLogin = False,
-                 **kwargs):
-
-        urlData = urlparse(loginUrl)
-
-        self.proxies = proxies
-        self.loginUrl = loginUrl
+        self.sessionFile = os.path.join(tempfile.gettempdir(), urlparse(loginUrl).netloc + sessionFileAppendix)
         self.maxSessionTime = maxSessionTimeSeconds
-        file = tempfile.gettempdir()
-        self.sessionFile = os.path.join(file, urlData.netloc + sessionFileAppendix)
+        self.proxies = proxies
         self.userAgent = userAgent
         self.debug = debug
-        self.retries = Retry(total = 5, backoff_factor = 0.5, respect_retry_after_header = False, status_forcelist = [408, 429, 444, 498, 499, 500, 502, 503, 504])
 
-        self.login(forceLogin, **kwargs)
+        self.initialize_session(forceLogin)
 
     def modification_date(self, filename):
         t = os.path.getmtime(filename)
         return datetime.datetime.fromtimestamp(t)
 
-    def login(self, forceLogin = False, **kwargs):
-        wasReadFromCache = False
-        if self.debug:
-            print("\n\t - Loading or generating session...")
-        if os.path.exists(self.sessionFile) and not forceLogin:
-            time = self.modification_date(self.sessionFile)         
+    def initialize_session(self, forceLogin):
+        if not forceLogin and self.load_session_from_cache():
+            return
+        self.create_new_session()
 
-            # only load if file less than 30 minutes old
-            lastModification = (datetime.datetime.now() - time).seconds
-            if lastModification < self.maxSessionTime:
+    def load_session_from_cache(self):
+        if os.path.exists(self.sessionFile):
+            last_modification = (datetime.datetime.now() - self.modification_date(self.sessionFile)).seconds
+            if last_modification < self.maxSessionTime:
                 with open(self.sessionFile, 'rb') as f:
                     self.session = pickle.load(f)
-                    wasReadFromCache = True
                     if self.debug:
-                        print("\t - Loaded session from cache (last access %ds ago)" % lastModification, end="")
+                        print(f"\t - Loaded session from cache (last access {last_modification}s ago)")
+                    return True
+        return False
 
-        if not wasReadFromCache:
-            self.session = requests.Session()
-            self.session.headers.update({"user-agent" : self.userAgent})
-            self.session.mount('https://', HTTPAdapter(max_retries=self.retries))
+    def create_new_session(self):
+        self.session = requests.Session()
+        self.session.headers.update({"user-agent": self.userAgent})
+        self.session.mount('https://', HTTPAdapter(max_retries=RETRIES))
 
+        if self.loginData:
+            res = self.session.post(self.loginUrl, data=self.loginData, proxies=self.proxies)
             if self.debug:
                 print("\t - Created new session with login")
-            self.saveSessionToCache()
+            if self.loginTestUrl and self.loginTestString:
+                self.verify_login()
 
-    def saveSessionToCache(self):
+        self.save_session_to_cache()
+
+    def verify_login(self):
+        res = self.session.get(self.loginTestUrl)
+        if self.loginTestString.lower() not in res.text.lower():
+            raise ValueError(f"Could not log into provided site '{self.loginUrl}' (did not find successful login string)")
+
+    def save_session_to_cache(self):
         # always save (to update timeout)
         with open(self.sessionFile, "wb") as f:
             pickle.dump(self.session, f)
             if self.debug:
-                print("\n\t - Updated session cache-file %s " % self.sessionFile, end="")
+                print(f"\n\t - Updated session cache-file {self.sessionFile}")
 
-    def retrieveContent(self, url, method = "get", postData = None, **kwargs):
-        if method == 'get':
-            res = self.session.get(url , proxies = self.proxies, **kwargs)
+    def retrieve_content(self, url, method="get", postData=None, **kwargs):
+        if method.lower() == 'get':
+            res = self.session.get(url, proxies=self.proxies, **kwargs)
         else:
-            res = self.session.post(url , data = postData, proxies = self.proxies, **kwargs)
+            res = self.session.post(url, data=postData, proxies=self.proxies, **kwargs)
 
         # the session has been updated on the server, so also update in cache
-        self.saveSessionToCache()
-
+        self.save_session_to_cache()
         return res
+        

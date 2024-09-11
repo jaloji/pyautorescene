@@ -1,9 +1,10 @@
 #!/usr/bin/env python
+
 from setuptools import setup, find_packages
 
 setup(
     name='pyresceneauto',
-    version='1.0',
+    version='2.0',
     description='Effortlessly turn extracted scene releases back into their original glory with the aid of pyRescene and srrdb.com',
     author='jaloji',
     license='WTFPL',

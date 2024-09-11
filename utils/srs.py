@@ -1,4 +1,4 @@
-import os, re
+import os
 from resample.srs import main as srsmain
 from resample.main import file_type_info, FileType, sample_class_factory
 
@@ -6,7 +6,6 @@ class SRS:
     def __init__(self, filename, binary=None):
         if not os.path.isfile(filename):
             raise AttributeError("srs must be a file")
-
         if not filename.endswith(".srs"):
             raise AttributeError("srs file must have the .srs extension")
 
@@ -24,9 +23,9 @@ class SRS:
 
     def recreate(self, finput, doutput):
         if not os.path.isfile(finput):
-            return AttributeError("input file must be a valid file")
+            raise AttributeError("input file must be a valid file")
         if not os.path.isdir(doutput):
-            return AttributeError("output directory must be a valid directory")
+            raise AttributeError("output directory must be a valid directory")
 
         try:
             srsmain([self.filename, "-y", "-o", doutput, finput], True)
@@ -40,4 +39,4 @@ class SRS:
         return self.srs_data.size
 
     def get_crc(self):
-        return "%08X"%(self.srs_data.crc32 & 0xFFFFFFFF)
+        return f"{self.srs_data.crc32 & 0xFFFFFFFF:08X}"

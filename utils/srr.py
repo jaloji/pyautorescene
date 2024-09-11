@@ -1,4 +1,5 @@
-import os, re, subprocess
+import os
+import re
 from rescene import info, extract_files, reconstruct
 from rescene.srr import display_info
 from utils.srs import SRS
@@ -26,182 +27,86 @@ class SRR:
 
     # check if compression method is used for RAR file
     def get_is_compressed(self):
-        if info(self.filename)['compression']:
-            return True
+        return bool(info(self.filename)['compression'])
 
     # search an srr for all rar-files presents
     # returns array of FileInfo's
     def get_rars_name(self):
-        matches = []
-
-        for sfile in info(self.filename)['rar_files'].values():
-            matches.append(sfile.file_name)
-
-        return matches
+        return [sfile.file_name for sfile in info(self.filename)['rar_files'].values()]
 
     def get_rar_crc(self):
-        matches = []
-
-        for sfile in info(self.filename)['rar_files'].values():
-            matches.append(sfile.crc32)
-
-        return matches
+        return [sfile.crc32 for sfile in info(self.filename)['rar_files'].values()]
 
     def get_rars_nb(self):
-        matches = []
-
-        for sfile in info(self.filename)['rar_files'].values():
-            matches.append(sfile.file_name)
-
-        return len(matches)
+        return len(info(self.filename)['rar_files'])
 
     def get_rars_size(self):
-        matches = []
-
-        for sfile in info(self.filename)['rar_files'].values():
-            matches.append(sfile.file_size)
-
-        return sum(matches)
+        return sum(sfile.file_size for sfile in info(self.filename)['rar_files'].values())
 
     # search an srr for all non RAR files presents in all sfv file
     # returns array of FileInfo's
     def get_sfv_entries_name(self):
-        matches = []
-
-        for sfile in info(self.filename)['sfv_entries']:
-            matches += (str(sfile).split())
-
-        return matches[::2]
+        return [str(sfile).split()[0] for sfile in info(self.filename)['sfv_entries']]
 
     def get_sfv_entries_nb(self):
-        matches = []
-
-        for sfile in info(self.filename)['sfv_entries']:
-            matches += (str(sfile).split())
-
-        return len(matches[::2])
+        return len(self.get_sfv_entries_name())
 
     # search an srr for all files presents in srr
     # returns array of FileInfo's
     def get_stored_files_name(self):
-        matches = []
-
-        for sfile in info(self.filename)['stored_files'].keys():
-            if not sfile.endswith(".srs"):
-                matches.append(sfile)
-
-        return matches
+        return [sfile for sfile in info(self.filename)['stored_files'].keys() if not sfile.lower().endswith(".srs")]
 
     def get_archived_fname(self):
-        matches = []
-
-        for sfile, value in info(self.filename)['archived_files'].items():
-            matches.append(sfile)
-
-        return matches
+        return list(info(self.filename)['archived_files'].keys())
 
     # search an srr for all archived-files that match given crc
     # returns array of FileInfo's matching the crc
     def get_archived_fname_by_crc(self, crc):
-        matches = []
-
-        for _, value in info(self.filename)['archived_files'].items():
-            if crc == value.crc32.zfill(8):
-                matches.append(value)
-
-        return matches
+        return [value for value in info(self.filename)['archived_files'].values() if crc == value.crc32.zfill(8)]
 
     # search an srr for all archived-files that much a given filename
     # returns an array of FileInfo's matching the fname
     def get_archived_crc_by_fname(self, fname):
-        matches = []
-
-        for key, value in info(self.filename)['archived_files'].items():
-            if fname == key:
-                matches.append(value)
-
-        return matches
+        return [value for key, value in info(self.filename)['archived_files'].items() if fname == key]
 
     def get_srs(self, path):
         if not os.path.isdir(path):
             raise AttributeError("path must be a valid directory")
 
-        matches = []
-        for sfile in info(self.filename)['stored_files'].keys():
-            if sfile.endswith(".srs"):
-                result = extract_files(self.filename, path, extract_paths=True, packed_name=sfile)
-                matches += result
-
-        return matches
+        srs_files = [sfile for sfile in info(self.filename)['stored_files'].keys() if sfile.lower().endswith(".srs")]
+        return [extract_files(self.filename, path, extract_paths=True, packed_name=sfile) for sfile in srs_files]
 
     def get_srs_size(self, path):
         if not os.path.isdir(path):
             raise AttributeError("path must be a valid directory")
 
-        matches = []
-        match = []
-        srs_size = []
-        for sfile in info(self.filename)['stored_files'].keys():
-            if sfile.endswith(".srs"):
-                result = extract_files(self.filename, path, extract_paths=True, packed_name=sfile)
-                matches += result
-        
-        for (x,y) in matches:
-            match.append(x)
-
-        for srs_path in match:
-            srs = SRS(srs_path)
-            srs_size.append(srs.get_filesize())
-
-        return sum(srs_size)
+        matches = self.get_srs(path)
+        return sum(SRS(srs_path).get_filesize() for match in matches for srs_path in match)
 
     def get_proof_filename(self):
-        matches = []
-
-        for sfile in info(self.filename)['stored_files'].keys():
-            if sfile.endswith(".jpg") or sfile.endswith(".jpeg") or sfile.endswith(".png"):
-                matches.append(sfile)
-
-        return matches
+        return [sfile for sfile in info(self.filename)['stored_files'].keys() if sfile.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
     def extract_stored_files_regex(self, path, regex=".*"):
         if not os.path.isdir(path):
             raise AttributeError("path must be a valid directory")
 
-        matches = []
-
-        for key in info(self.filename)["stored_files"].keys():
-            if re.search(regex, key):
-                result = extract_files(self.filename, path, extract_paths=True, packed_name=key)
-                matches += result
-
-        return matches
+        return [item for key in info(self.filename)["stored_files"].keys() if re.search(regex, key)
+            for item in extract_files(self.filename, path, extract_paths=True, packed_name=key)]
 
     def reconstruct_rars(self, dinput, doutput, hints, rarfolder, tmpfolder):
-        if not os.path.isdir(dinput):
-            raise AttributeError("input folder must be a valid directory.")
-        if not os.path.isdir(doutput):
-            raise AttributeError("output folder must be a valid directory")
-        if os.name == 'nt':
-            if not os.path.isdir(rarfolder):
-                raise AttributeError("rar folder must be a valid directory.")
-            if not os.path.isdir(tmpfolder):
-                os.mkdir(tmpfolder)
+        if not os.path.isdir(dinput) or not os.path.isdir(doutput):
+            raise AttributeError("input and output folders must be valid directories.")
 
-            try:
-                res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True, rar_executable_dir=rarfolder, tmp_dir=tmpfolder, extract_files=False)
+        if os.name == 'nt' and rarfolder and not os.path.isdir(rarfolder):
+            raise AttributeError("rar folder must be a valid directory. See prepardir.ps1 install")
+        if tmpfolder and not os.path.isdir(tmpfolder):
+            os.mkdir(tmpfolder)
 
-                if res == -1:
-                    raise ValueError("One or more of the original files already exist in " + doutput)
-            except:
-                raise
-        else:
-            try:
-                res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True, extract_files=False)
+        res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True,
+                          rar_executable_dir=rarfolder if os.name == 'nt' else None,
+                          tmp_dir=tmpfolder if os.name == 'nt' else None, extract_files=False)
 
-                if res == -1:
-                    raise ValueError("One or more of the original files already exist in " + doutput)
-            except:
-                raise
+        if res == -1:
+            raise ValueError(f"One or more of the original files already exist in {doutput}")
 
         return True
