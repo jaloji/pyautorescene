@@ -250,7 +250,8 @@ def process_crc(args, fpath):
 def search_file(args, fpath):
     # When -vs command is called
     global success_release
-    
+    global scanned_release
+
     if not is_valid_file(args, fpath):
         return False
 
@@ -259,8 +260,21 @@ def search_file(args, fpath):
         return False
 
     release = search_srrdb_crc(release_crc, fpath)
-    if release:
-        success_release += 1
+    if not release:
+        return False
+    else:
+        #keep track of the releases we are processing
+        if not release['release'] in release_list:
+            release_list[release['release']] = dict()
+            release_list[release['release']]['search'] = False
+        elif release_list[release['release']]['search']:
+            verbose("\t - Skipping, already processed.")
+            scanned_release -= 1
+            return True
+
+    release_list[release['release']]['search'] = True
+    success_release += 1
+    return True
 
 def process_release_directory(args, release, doutput):
     # Ensure the output directory matches the release name
@@ -1027,39 +1041,40 @@ if __name__ == "__main__":
                         for sfile in files:
                             check_file(args, os.path.join(root, sfile))
 
-    # Verify weird inside releases
-    print(f"* Checking if releases are clean...")
-    print(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
-    print(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
-    if args['output']:
-        if isinstance(args['output'], str):
-            for path in [args['output']]:
+    if not args['search_srrdb']:
+        # Verify weird inside releases
+        print(f"* Checking if releases are clean...")
+        print(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
+        print(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
+        if args['output']:
+            if isinstance(args['output'], str):
+                for path in [args['output']]:
+                    if os.path.isdir(path):
+                        for entry in os.listdir(path):
+                            full_path = os.path.join(path, entry)
+                            if os.path.isdir(full_path):
+                                utils.check_rls.run_checks(full_path)
+
+        if args['check_extras']:
+            for path in args['input']:
                 if os.path.isdir(path):
                     for entry in os.listdir(path):
                         full_path = os.path.join(path, entry)
                         if os.path.isdir(full_path):
                             utils.check_rls.run_checks(full_path)
 
-    if args['check_extras']:
-        for path in args['input']:
-            if os.path.isdir(path):
-                for entry in os.listdir(path):
-                    full_path = os.path.join(path, entry)
-                    if os.path.isdir(full_path):
-                        utils.check_rls.run_checks(full_path)
+        # Print every failed things
+        if len(missing_files) > 0:
+            print("* Rescene process complete, the following files need to be manually acquired:")
+            print(*missing_files, sep='\n')
 
-    # Print every failed things
-    if len(missing_files) > 0:
-        print("* Rescene process complete, the following files need to be manually acquired:")
-        print(*missing_files, sep='\n')
+        if len(compressed_release) > 0:
+            print("* Rescene process complete, the following files were compressed and need to be manually acquired:")
+            print(*compressed_release, sep='\n')
 
-    if len(compressed_release) > 0:
-        print("* Rescene process complete, the following files were compressed and need to be manually acquired:")
-        print(*compressed_release, sep='\n')
-
-    if len(scanned_nothing_found) > 0:
-        print("* Rescene process complete, the following files were not found and need to be manually acquired:")
-        print(*scanned_nothing_found, sep='\n')
+        if len(scanned_nothing_found) > 0:
+            print("* Rescene process complete, the following files were not found and need to be manually acquired:")
+            print(*scanned_nothing_found, sep='\n')
 
     # Print succes ratio
     print(f"* Rescene process complete: {success_release} completed of {scanned_release} scanned")
