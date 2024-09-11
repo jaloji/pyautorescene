@@ -112,4 +112,6 @@ To Do
 * Have a feddback about bugs or malfunction under linux
 * Check if it is possible to rebuild compressed RAR under linux
 
-
+docker-pyautorescene
+=============
+A docker version is available here: [docker-pyautorescene](https://github.com/jaloji/docker-pyautorescene)
