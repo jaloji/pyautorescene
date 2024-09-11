@@ -31,6 +31,8 @@ It is **seriously** recommended to output to a completely separate folder that y
 
 
 If you already have releases in scene format but no longer the unrarred .mkv and you want to search against srrdb if you have missing files like nfo/sfv/Sample/Proof/Subs do `autorescene.py -vc /path/to/input`
+If you want to do te same with check CRC `autorescene.py -vc --check-crc /path/to/input`
+If you want to search files against srrdb to know if they are corrupt or if they have a .srr available do `autorescene.py -vs /path/to/input`
 
 ```
 stick$ autorescene.py --help
