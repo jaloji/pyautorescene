@@ -5,8 +5,9 @@ Forked from [sticki](https://bitbucket.org/sticki/pyautorescene)
 pyautorescene
 =============
 pyautorescene automates the process of returning un-rarred scene releases back into their former glory.  It makes use of [PyReScene](https://github.com/srrDB/pyrescene) and [srrDB](http://srrdb.com) to make the whole process has hands off as possible. 
-With this fork, it is possible to log in your srrdb account to bypass the daily download limit of srr.
-Now it is also possible to add only nfo/sfv/Sample/Proof/Subs if you already have releases in scene format but no longer the unrarred .mkv.
+With this fork, it is possible to log in your srrdb account to bypass the daily download limit of srr. Redirect for srrxx is automatic don't worry about it...
+Now it is also possible to add only nfo/sfv/Sample/Proof/Subs if you already have releases in scene format but no longer the unrarred .mkv (Can rebuild if you have something missing and you still have them in the same directory).
+Now it is also possible to search unrarred files against CRC just to check if they have .srr available or good CRC for exemple.
 
 Requirements
 ------------
@@ -18,8 +19,8 @@ Installation
 ------------
 1. Clone this repository to your local machine
 2. Via terminal/command prompt navigate to the folder
-3. Edit `utils/res.py`, fill `username/password` to login your srrdb account, 
-4. Fill `rar_version` with the path that you have the WinRAR executables (you must run `preprardir.ps1` before) and fill `srr_temp_foder` who is just a temp folder for the recompressing process. (**Doesn't work under linux...**)
+3. Edit `utils/res.py`, fill `USERNAME/PASSWORD` to login your srrdb account, 
+4. Fill `RAR_VERSION` with the path that you have the WinRAR executables (you must run `preprardir.ps1` before) and fill `SRR_TEMP_FOLDER` who is just a temp folder for the recompressing process. (**Doesn't work under linux...**)
 5. Run `python setup.py install`
 
 Usage
@@ -66,6 +67,7 @@ optional arguments:
   --check-crc           check crc in sfv file when using --check-extras
   --keep-srr            keep srr in output directory
   --keep-srs            keep srs in output directory
+  -s, --search-srrdb    check crc against srrdb and print release name
 ```
 
 If you have a dynamic IP or you encounter a disconnection which causes an error like this:
@@ -75,10 +77,35 @@ If you have a dynamic IP or you encounter a disconnection which causes an error 
 - Searching srrdb.com for matching Release: release.name  [FAIL]  -> name 's' is not defined
 ```
 
-Then just double click on the bat file and relaunch the script **but before you need to edit it and change the username in the path by your own!**
+Then just double click on the .bat file and relaunch the script **but before you need to edit it and change the username in the path by your own!**
+
+NEW IN V2.0
+-----
+* All the code rewrited, optimised, simplified and modernized
+* Fixed many crashed or bug like:
+  - Crashes when multiples proof or .srs inside .srr
+  - Crashes without any reason except bad code
+  - Didn't case sensitive for file extension or path
+  - Not a good exclusion method for subdirs of a release for -vc (check extras) with or without --check-crc
+  - Not a good method for subrar check or reconstruction
+  - Skipping a file if a release have already been checked didn't work well
+* Fixed counter for scanned release and success release
+* Fixed multiple different print style when Sample, Proof, Subs rar or release rar is missing
+* Fixed subtitles rebuild for:
+  - Single Subs .rar: idx and sub in the same .rar file
+  - Double Subs .rar: a .rar file with .idx or .sub inside a rar with .idx or .sub too
+  - Multiple Subs .rar: multiple .rar with .idx and .sub inside a .rar (many of cd1/cd2 release use this one) 
+* Added feature to search files against srrdb with CRC to know if .srr exist or if CRC is good
+* Added feature to check if something anormal or weird is inside the release, like double nfos, sfv missing, multiple Proof or Sample dir and many other things...
+* Added a counter for no matched result
+* Added orange color when a RAR reconstruction is using compression method
+* Maybe more but I don't remember...
+
 
 To Do
 -----
-Create a .sh script that does exactly the same thing as the .bat (I don't use this script on Linux so I will have to find where the generic temp files are to have a reliable path that works for everyone)
+* Create a .sh script that does exactly the same thing as the .bat (I don't use this script on Linux so I will have to find where the generic temp files are to have a reliable path that works for everyone)
+* Have a feddback about bugs or malfunction under linux
+* Check if it is possible to rebuild compressed RAR under linux
 
-Make a better code for Subs reconstruction/check -> Working but little bugged, I'm not sure that will work with all subbed releases.
+
