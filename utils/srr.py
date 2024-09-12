@@ -103,8 +103,8 @@ class SRR:
             os.mkdir(tmpfolder)
 
         res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True,
-                          rar_executable_dir=rarfolder if os.name == 'nt' else None,
-                          tmp_dir=tmpfolder if os.name == 'nt' else None, extract_files=False)
+                          rar_executable_dir=rarfolder,
+                          tmp_dir=tmpfolder, extract_files=False)
 
         if res == -1:
             raise ValueError(f"One or more of the original files already exist in {doutput}")

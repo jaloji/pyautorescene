@@ -23,9 +23,11 @@ loginTestUrl = SITE
 loginTestString = USERNAME
 
 # YOU NEED TO EDIT WITH YOURS
-# DON'T RUN THIS SCRIPT WITHOUT USING preprardir.ps1 HERE: https://github.com/MRiCEQB/PS_preprardir EXCEPT IF YOU'RE UNDER LINUX
-RAR_VERSION = "C:\\Python39\\pyrescene-master\\rarv"
-SRR_TEMP_FOLDER = f"{RAR_VERSION}\\tmp"
+# DON'T RUN THIS SCRIPT WITHOUT USING preprardir.ps1 HERE: https://github.com/MRiCEQB/PS_preprardir 
+# EXCEPT IF YOU'RE UNDER LINUX USE preprardir.py in pyrescene source
+
+RAR_VERSION = ""
+SRR_TEMP_FOLDER = f"{RAR_VERSION}"
 
 # Create a directory if it doesn't exist
 def mkdir(path):
