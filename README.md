@@ -108,9 +108,10 @@ NEW IN V2.0
 
 To Do
 -----
-* Create a .sh script that does exactly the same thing as the .bat (I don't use this script on Linux so I will have to find where the generic temp files are to have a reliable path that works for everyone)
 * Have a feddback about bugs or malfunction under linux
 * Check if it is possible to rebuild compressed RAR under linux
+  - How to fix this bullshit ?
+    ![Bullshit.png](Bullshit.png)
 
 docker-pyautorescene
 =============
