@@ -97,14 +97,12 @@ class SRR:
         if not os.path.isdir(dinput) or not os.path.isdir(doutput):
             raise AttributeError("input and output folders must be valid directories.")
 
-        if os.name == 'nt' and rarfolder and not os.path.isdir(rarfolder):
-            raise AttributeError("rar folder must be a valid directory. See prepardir.ps1 install")
-        if tmpfolder and not os.path.isdir(tmpfolder):
-            os.mkdir(tmpfolder)
-
-        res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True,
-                          rar_executable_dir=rarfolder,
-                          tmp_dir=tmpfolder, extract_files=False)
+        if not rarfolder or not os.path.isdir(rarfolder) or not tmpfolder or not os.path.isdir(tmpfolder):
+            # Allow script to work without anything set in res.py
+            res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True, extract_files=False)
+        else:
+            res = reconstruct(self.filename, dinput, doutput, hints=hints, auto_locate_renamed=True,
+                              rar_executable_dir=rarfolder, tmp_dir=tmpfolder, extract_files=False)
 
         if res == -1:
             raise ValueError(f"One or more of the original files already exist in {doutput}")
