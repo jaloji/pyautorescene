@@ -77,8 +77,14 @@ def check_bad_files(rlsname, rel_path, release_type):
     # Filter file lists
     release_rootfilelist = [f for f in get_file_list(rlsname, rel_path, maxdepth=1) if not re.search(r'^.*F - COMPLETE.*$|\.message$', f)]
     release_filelist = [f for f in get_file_list(rlsname, rel_path) if not re.search(r'^.*F - COMPLETE.*$|\.message$', f)]
-    release_subdirs = [d for d in get_file_list(rlsname, rel_path, type_filter='d') if not re.search(r'^.*F - COMPLETE.*$', d)]
-
+    #release_subdirs = [d for d in get_file_list(rlsname, rel_path, type_filter='d') if not re.search(r'^.*F - COMPLETE.*$', d)]
+    subdirs_regexes = [r'^.*F - COMPLETE.*$', r'^.*100\% COMPLETED.*$', r'^.*DONE AT 100\%.*$']
+    combined_pattern = '|'.join(subdirs_regexes)
+    release_subdirs = [
+    d for d in get_file_list(rlsname, rel_path, type_filter='d')
+        if not re.search(combined_pattern, d)
+    ]
+   
     normalized_rootfilelist = normalize(release_rootfilelist)
     normalized_filelist = normalize(release_filelist)
     normalized_subdirs = normalize(release_subdirs)
