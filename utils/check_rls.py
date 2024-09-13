@@ -74,10 +74,29 @@ def get_release_type(rlsname):
 def check_bad_files(rlsname, rel_path, release_type):
     release_status = "OK"
 
+    # List of exclusion patterns from zipscript
+    exclusion_patterns = [
+    r'\[.*%.*incomplete.*\]',          # ex: [something%incomplete]
+    r'\[.*-.*-.*\]',                   # ex: [foo-bar-baz]
+    r'\[.*\].*\(.*\).*?\[.*\]',        # ex: [foo](bar)[baz]
+    r'\[.*\].*\[.*\]',                 # ex: [foo][bar]
+    r'\[.*\].*\[.*\].*\[.*\]',         # ex: [foo][bar][baz]
+    r'\[100% complete\].*',            # ex: [100% complete] test
+    r'\[complete\]',                   # ex: [complete]
+    r'\[imdb\]=-.*-=\[imdb\]',         # ex: [imdb]=something-=[imdb]
+    r'\[stream:.*',                    # ex: [stream:info
+    r'^.*100\% COMPLETED.*$',          # ex: Done at 100% COMPLETED
+    r'^.*DONE AT 100\%.*$',            # ex: Completed. DONE AT 100%
+    r'^.*F - COMPLETE.*$',             # ex: F - COMPLETE
+    r'\.message$']                     # ex: .message
+
+    # Combine all patterns into a single pattern
+    combined_pattern = re.compile(r'|'.join(exclusion_patterns), re.IGNORECASE)
+
     # Filter file lists
-    release_rootfilelist = [f for f in get_file_list(rlsname, rel_path, maxdepth=1) if not re.search(r'^.*F - COMPLETE.*$|\.message$', f)]
-    release_filelist = [f for f in get_file_list(rlsname, rel_path) if not re.search(r'^.*F - COMPLETE.*$|\.message$', f)]
-    release_subdirs = [d for d in get_file_list(rlsname, rel_path, type_filter='d') if not re.search(r'^.*F - COMPLETE.*$', d)]
+    release_rootfilelist = [f for f in get_file_list(rlsname, rel_path, maxdepth=1) if not combined_pattern.search(f)]
+    release_filelist = [f for f in get_file_list(rlsname, rel_path) if not combined_pattern.search(f)]
+    release_subdirs = [d for d in get_file_list(rlsname, rel_path, type_filter='d') if not combined_pattern.search(d)]
 
     normalized_rootfilelist = normalize(release_rootfilelist)
     normalized_filelist = normalize(release_filelist)
