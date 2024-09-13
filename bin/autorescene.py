@@ -390,6 +390,17 @@ def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
     except Exception as e:
         verbose("-------------------------------")
         verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample: {e}.")
+        if os.path.exists(fpath):
+            try:
+                verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
+                output, error, fail = utils.res.run_resample_net_executable(utils.res.SRS_NET_EXE, srs_path, fpath, "-o", os.path.dirname(srs_path))
+                
+                if fail == True:
+                    verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
+
+            except Exception as e:
+                verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
+
         # Attempt to find the sample on local disk if recreation fails when -vaf or -f command is called 
         if args['find_sample']:
             verbose("\t - Searching for sample on local disk")
@@ -863,9 +874,22 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                 sample.recreate(os.path.join(fpath, srr_finfo[0]), os.path.dirname(srs_path))
             except Exception as e:
                 verbose(f"-------------------------------\n\t - {utils.res.FAIL} -> failed to recreate sample: {e}.")
-                missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
-                if not args['keep_srs'] and os.path.exists(srs_path):
-                    os.remove(srs_path)
+                if os.path.exists(os.path.join(fpath, srr_finfo[0])):
+                    try:
+                        verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
+                        output, error, fail = utils.res.run_resample_net_executable(utils.res.SRS_NET_EXE, srs_path, os.path.join(fpath, srr_finfo[0]), "-o", os.path.dirname(srs_path))
+                        
+                        if fail == True:
+                            verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
+                            missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
+                            if not args['keep_srs'] and os.path.exists(srs_path):
+                                os.remove(srs_path)
+
+                    except Exception as e:
+                        verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
+                        missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
+                        if not args['keep_srs'] and os.path.exists(srs_path):
+                            os.remove(srs_path)
             else:
                 verbose("-------------------------------")
                 verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")

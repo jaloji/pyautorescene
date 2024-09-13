@@ -2,6 +2,7 @@ import os
 import errno
 import tempfile
 import json
+import subprocess
 from colorama import Fore, Style
 
 SUCCESS = Fore.GREEN + "  [SUCCESS] " + Fore.RESET
@@ -28,6 +29,11 @@ loginTestString = USERNAME
 
 RAR_VERSION = ""
 SRR_TEMP_FOLDER = f"{RAR_VERSION}"
+if os.name == 'nt':
+    SRS_NET_EXE = "C:\\Python39\\pyautorescene-master\\utils\\srs.exe"
+else:
+    # You need mono-complete package to run this
+    SRS_NET_EXE = "/app/pyautorescene-master/utils/srs.exe"
 
 # Create a directory if it doesn't exist
 def mkdir(path):
@@ -91,3 +97,55 @@ def download_srr(rls, s, path=None):
         raise RuntimeError("Failed to download SRR file") from e
 
     return path
+
+def run_resample_net_executable(executable_path, *args):
+    fail = False  # Initialize the fail variable inside the function
+    try:
+        # Prepare the command with arguments
+        if os.name == 'nt':
+            command = [executable_path] + list(args)
+        else:
+            command = ['mono', executable_path] + list(args)
+
+        # Run the .NET executable and capture output incrementally
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        # Read output in real-time
+        stdout_lines = []
+        stderr_lines = []
+        for stdout_line in iter(process.stdout.readline, ''):
+            stdout_lines.append(stdout_line)
+            print(stdout_line, end='')
+            if (stdout_line.startswith("Unable to") or
+                stdout_line.startswith("Could not locate") or
+                stdout_line.startswith("No A/V data was found") or
+                stdout_line.startswith("Operation aborted") or
+                stdout_line.startswith("Rebuild failed") or
+                stdout_line.startswith("Corruption detected") or
+                stdout_line.startswith("Unexpected Error")):
+                fail = True
+
+        for stderr_line in iter(process.stderr.readline, ''):
+            stderr_lines.append(stderr_line)
+            print("Error:", stderr_line, end='')
+
+        process.stdout.close()
+        process.stderr.close()
+        process.wait()
+
+        # Return the captured output and the fail status
+        return ''.join(stdout_lines), ''.join(stderr_lines), fail
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred: {e}")
+        return None, e.stderr, True
+
+    except subprocess.TimeoutExpired as e:
+        print(f"Process timed out: {e}")
+        process.kill()
+        return None, None, True
