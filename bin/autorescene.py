@@ -443,6 +443,16 @@ def find_file_by_extension(root_dir, extension):
                 return os.path.join(root, file)
     return None
 
+def find_sub_files_by_extension(root_dir, extension):
+    # Search for all files with a specific extension in a directory tree
+    matching_files = []
+    
+    for root, _, files in os.walk(root_dir):
+        for file in files:
+            if file.lower().endswith(extension):
+                matching_files.append(os.path.join(root, file))
+    
+    return matching_files
 def get_first_rar_name(rar_names):
     # Get the first .rar file name inside .srr, needed if we have .rar inside .rar for Subs
     for rarn in rar_names:
@@ -457,14 +467,14 @@ def get_second_srr(matches):
 def reconstruct_rar(srr, file, alt_file, rename_hints=None):
     # Function used to reconstruct every Subs .rar
     if rename_hints is None:
-        rename_hints = {srr.filename: os.path.basename(file)}
+        rename_hints = {srr.filename: os.path.basename(file[0])}
 
     verbose("\t - Reconstructing RAR", end="")
     try:
         if srr.get_is_compressed():
             verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
 
-        srr.reconstruct_rars(os.path.dirname(file), os.path.dirname(srr.filename), rename_hints, utils.res.RAR_VERSION, utils.res.SRR_TEMP_FOLDER)
+        srr.reconstruct_rars(os.path.dirname(file[0]), os.path.dirname(srr.filename), rename_hints, utils.res.RAR_VERSION, utils.res.SRR_TEMP_FOLDER)
         verbose(f"{utils.res.SUCCESS}")
         return True
     except Exception as e:
@@ -475,12 +485,45 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
     # Function used to reconstruct in the good order Subs .rar inside Subs .rar
     success = False
     rar_name_2 = []
+    
     # Reconstruct the .rar inside the .rar first if more than one .srr is found
     for all_srr_files in sub_srr_2:
+        archived_name = []
+        archived_names_to_search = []
         subs_srr_2 = SRR(all_srr_files)
         rar_name_2.append(get_first_rar_name(subs_srr_2.get_rars_name()))
-        rename_hints_subs = {subs_srr_2.filename: os.path.basename(sub_file)}
-        pair_success = reconstruct_rar(subs_srr_2, sub_file, idx_file, rename_hints_subs)
+        archived_name = subs_srr_2.get_archived_fname() # Will contains .idx/.sub filename
+
+        # Loop through the list of .sub filenames to search for
+        for archived_fname in archived_name:
+            for full_path in sub_file:
+                # Extract the the full path
+                if archived_fname == os.path.basename(full_path):
+                    archived_names_to_search.append(full_path)
+
+        # If no result search for .idx files 
+        if len(archived_names_to_search) == 0:
+            for archived_fname in archived_name:
+                for full_path in idx_file:
+                    if archived_fname == os.path.basename(full_path):
+                        archived_names_to_search.append(full_path)
+
+        if len(archived_names_to_search) == 0:
+            crc_archived = subs_srr.get_archived_crc()
+            matched_sub_files = []
+            matched_idx_files = []
+            for sub_file_paths, idx_file_paths in zip(sub_file, idx_file):
+                sub_crc = calc_crc(sub_file_paths)
+                idx_crc = calc_crc(idx_file_paths)    
+                if sub_crc in crc_archived:
+                    matched_sub_files.append(sub_file_paths)
+                if idx_crc in crc_archived:
+                    matched_idx_files.append(idx_file_paths)
+            
+            archived_names_to_search = matched_sub_files + matched_idx_files
+
+        rename_hints_subs = {subs_srr_2.filename: archived_name[0]}
+        pair_success = reconstruct_rar(subs_srr_2, archived_names_to_search, idx_file, rename_hints_subs)
         success = success or pair_success
 
     if success:
@@ -488,12 +531,43 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
         if len(sub_srr_2) > 1:
             verbose("\t - Reconstructing second RAR for Subs")
             rename_hints_subs = {subs_srr.filename: get_first_rar_name(subs_srr.get_rars_name())}
-            reconstruct_rar(subs_srr, os.path.join(os.path.dirname(sub_srr_2[0]), rar_name_2[0]), sub_file, rename_hints_subs)
+            reconstruct_rar(subs_srr, [os.path.join(os.path.dirname(sub_srr_2[0]), rar_name_2[0])], sub_file, rename_hints_subs)
         # Reconstruct the second RAR if we have one .rar inside the Subs .rar
         else:
-            rename_hints_subs = {subs_srr.filename: os.path.basename(idx_file)}
+            archived_name = []
+            archived_names_to_search = []
+            archived_name = subs_srr.get_archived_fname() # Will contains .idx/.sub filename
+            # Loop through the list of .sub filenames to search for
+            for archived_fname in archived_name:
+                for full_path in sub_file:
+                    # Extract the the full path
+                    if archived_fname == os.path.basename(full_path):
+                        archived_names_to_search.append(full_path)
+
+            # If no result search for .idx files 
+            if len(archived_names_to_search) == 0:
+                for archived_fname in archived_name:
+                    for full_path in idx_file:
+                        if archived_fname == os.path.basename(full_path):
+                            archived_names_to_search.append(full_path)
+
+        if len(archived_names_to_search) == 0:
+            crc_archived = subs_srr.get_archived_crc()
+            matched_sub_files = []
+            matched_idx_files = []
+            for sub_file_paths, idx_file_paths in zip(sub_file, idx_file):
+                sub_crc = calc_crc(sub_file_paths)
+                idx_crc = calc_crc(idx_file_paths)    
+                if sub_crc in crc_archived:
+                    matched_sub_files.append(sub_file_paths)
+                if idx_crc in crc_archived:
+                    matched_idx_files.append(idx_file_paths)
+            
+            archived_names_to_search = matched_sub_files + matched_idx_files
+
+            rename_hints_subs = {subs_srr.filename: archived_name[0]}
             verbose("\t - Reconstructing second RAR for Subs")
-            reconstruct_rar(subs_srr, idx_file, sub_file, rename_hints_subs)
+            reconstruct_rar(subs_srr, archived_names_to_search, sub_file, rename_hints_subs)
 
     return rar_name_2, success
 
@@ -517,7 +591,7 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
 
     all_srr_files = get_second_srr(matches)
     success = False
-    
+
     # If we there are .rar inside .rar we need to have the path of every others .srr files
     if all_srr_files:
         rar_name_2 = None
@@ -532,7 +606,41 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
 
         return success
     else:
-        return reconstruct_rar(subs_srr, idx_file, sub_file) # If no secondary SRR files are found, that mean that .sub and .idx files are inside it
+        # If no secondary SRR files are found, that mean that .sub and .idx files are inside it
+        archived_name = []
+        archived_names_to_search = []
+        archived_name = subs_srr.get_archived_fname() # Will contains .idx/.sub filename
+
+        # Loop through the list of .sub filenames to search for
+        for archived_fname in archived_name:
+            for full_path in sub_file:
+                # Extract the the full path
+                if archived_fname == os.path.basename(full_path):
+                    archived_names_to_search.append(full_path)
+
+        # If no result search for .idx files 
+        if len(archived_names_to_search) == 0:
+            for archived_fname in archived_name:
+                for full_path in idx_file:
+                    if archived_fname == os.path.basename(full_path):
+                        archived_names_to_search.append(full_path)
+
+        if len(archived_names_to_search) == 0:
+            crc_archived = subs_srr.get_archived_crc()
+            matched_sub_files = []
+            matched_idx_files = []
+            for sub_file_paths, idx_file_paths in zip(sub_file, idx_file):
+                sub_crc = calc_crc(sub_file_paths)
+                idx_crc = calc_crc(idx_file_paths)    
+                if sub_crc in crc_archived:
+                    matched_sub_files.append(sub_file_paths)
+                if idx_crc in crc_archived:
+                    matched_idx_files.append(idx_file_paths)
+            
+            archived_names_to_search = matched_sub_files + matched_idx_files
+
+        rename_hints_subs = {subs_srr.filename: archived_name[0]}
+        return reconstruct_rar(subs_srr, archived_names_to_search, sub_file, rename_hints_subs)
 
 def cleanup_files(args, release, sub_srr):
     if not args['keep_srr']:
@@ -647,8 +755,8 @@ def find_sub_files(doutput, fpath):
                 sub_srr = find_file_by_extension(sub_dir_path, ".srr")
                 break
 
-    sub_file = find_file_by_extension(os.path.dirname(fpath), ".sub")
-    idx_file = find_file_by_extension(os.path.dirname(fpath), ".idx")
+    sub_file = find_sub_files_by_extension(os.path.dirname(fpath), ".sub")
+    idx_file = find_sub_files_by_extension(os.path.dirname(fpath), ".idx")
 
     return sub_srr, sub_file, idx_file
 

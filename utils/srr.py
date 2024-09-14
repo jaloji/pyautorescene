@@ -67,7 +67,7 @@ class SRR:
     # search an srr for all archived-files that much a given filename
     # returns an array of FileInfo's matching the fname
     def get_archived_crc_by_fname(self, fname):
-        return [value for key, value in info(self.filename)['archived_files'].items() if fname == key]
+        return [k.crc32 for k in info(self.filename)['archived_files'].values() if k.file_name == fname]
 
     def get_srs(self, path):
         if not os.path.isdir(path):
