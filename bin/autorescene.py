@@ -318,7 +318,7 @@ def rename_file_if_needed(fpath, doutput, srr_finfo):
 
 def extract_stored_files(release_srr, doutput, release, srr_finfo):
     # Extract stored files from .srr file based on regex filter
-    verbose("\t - Extracting stored files from SRR", end="")
+    verbose("\t - Extracting stored files from SRR")
     regex = "^(?i:(?:(.+\.)((?!txt$)[^.]*)|[^.]+))$" if srr_finfo else "^(?i:(?:(.+\.)((?!srs$)[^.]*)|[^.]+))$"
     try:
         matches = release_srr.extract_stored_files_regex(doutput, regex=regex)
@@ -328,10 +328,9 @@ def extract_stored_files(release_srr, doutput, release, srr_finfo):
     else:
         srs_path = None
         proof_path = None
-        verbose(f"{utils.res.SUCCESS}")
         # Save path for Sample/Proof and fix crashed when multiple .srs or Proofs
         for match in matches:
-            verbose(f"\t\t - {os.path.relpath(match[0], doutput)}")
+            verbose(f"\t\t - {os.path.relpath(match[0], doutput)}{utils.res.SUCCESS}")
             if srs_path is None and match[0].lower().endswith(".srs"):
                 srs_path = match[0]
             if proof_path is None and match[0].lower().endswith((".jpg", ".jpeg", ".png")):
@@ -381,7 +380,8 @@ def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
             verbose(f"{utils.res.FAIL} -> more than one SRS in this SRR. Please reconstruct manually.")
             return None
         else:
-            srs_path = release_srs[0][0]
+            srs_path = release_srs[0]
+            verbose(f"{utils.res.SUCCESS}")
 
     sample = SRS(srs_path)
     verbose("\t - Recreating Sample .. expect output from SRS\n-------------------------------")
@@ -435,14 +435,6 @@ def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
     
     release_list[release['release']]['resample'] = True
 
-def find_file_by_extension(root_dir, extension):
-    # Search for a file with a specific extension in a directory tree
-    for root, _, files in os.walk(root_dir):
-        for file in files:
-            if file.lower().endswith(extension):
-                return os.path.join(root, file)
-    return None
-
 def find_sub_files_by_extension(root_dir, extension):
     # Search for all files with a specific extension in a directory tree
     matching_files = []
@@ -453,6 +445,7 @@ def find_sub_files_by_extension(root_dir, extension):
                 matching_files.append(os.path.join(root, file))
     
     return matching_files
+
 def get_first_rar_name(rar_names):
     # Get the first .rar file name inside .srr, needed if we have .rar inside .rar for Subs
     for rarn in rar_names:
@@ -601,7 +594,11 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
 
 def cleanup_files(args, release, sub_srr):
     if not args['keep_srr']:
-        for file in [sub_srr]:
+        # Ensure sub_srr is a list; if it's a string, convert it to a list
+        if isinstance(sub_srr, str):
+            sub_srr = [sub_srr]
+        
+        for file in sub_srr:
             if file and os.path.exists(file):
                 os.remove(file)
 
@@ -691,7 +688,10 @@ def check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, releas
 
 def find_sub_files(doutput, fpath):
     # Function to search and save the path of every .sub, .idx and .srr file 
-    sub_srr = None
+    sub_srr = []
+    sub_file = []
+    idx_file = []
+
     # List all directories in doutput
     all_dirs = [d for d in os.listdir(doutput) if os.path.isdir(os.path.join(doutput, d))]
 
@@ -709,8 +709,7 @@ def find_sub_files(doutput, fpath):
 
             # Verify if the path exists
             if os.path.exists(sub_dir_path):
-                sub_srr = find_file_by_extension(sub_dir_path, ".srr")
-                break
+                sub_srr = find_sub_files_by_extension(sub_dir_path, ".srr")
 
     sub_file = find_sub_files_by_extension(os.path.dirname(fpath), ".sub")
     idx_file = find_sub_files_by_extension(os.path.dirname(fpath), ".idx")
@@ -719,6 +718,9 @@ def find_sub_files(doutput, fpath):
 
 def process_subtitles(args, fpath, doutput, release):
     # Function to manage the start of Subs reconstruction only with -vaf or --resubs
+    sub_srr = []
+    sub_file = []
+    idx_file = []
     sub_srr, sub_file, idx_file = find_sub_files(doutput, fpath)
     
     if not all([sub_srr, sub_file, idx_file]):
@@ -732,7 +734,7 @@ def process_subtitles(args, fpath, doutput, release):
     all_dirs_lower = {d.lower(): d for d in all_dirs}
 
     # Search and save the path of the Subs .sfv file
-    sub_sfv = None
+    sub_sfv = []
     for sub_dir in ["Sub", "Subs", "Subpack", "Subtitles"]:
         sub_dir_lower = sub_dir.lower()
 
@@ -744,15 +746,17 @@ def process_subtitles(args, fpath, doutput, release):
 
             # Verify if the path exists
             if os.path.exists(sub_dir_path):
-                sub_sfv = find_file_by_extension(sub_dir_path, ".sfv")
-                break
+                sub_sfv = find_sub_files_by_extension(sub_dir_path, ".sfv")
     
-    if not sub_sfv or not os.path.exists(sub_sfv):
+    if not sub_sfv or not any(os.path.exists(sfv) for sfv in sub_sfv):
         verbose(f"\t - SFV file not found: {sub_sfv}")
         return False
     
-    extract_and_reconstruct_rars(sub_srr, sub_file, idx_file) # We try to rebuild first
-    check_crc_and_fix(sub_sfv, fpath, sub_srr, sub_file, idx_file, args, release) # If rebuild success or failed can search or calc CRC
+    for srr_file in sub_srr:
+        extract_and_reconstruct_rars(srr_file, sub_file, idx_file) # We try to rebuild first
+
+    for sfv_file in sub_sfv:
+        check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, release) # If rebuild success or failed can search or calc CRC
 
     cleanup_files(args, release, sub_srr) # Clean everything
     release_list[release['release']]['resubs'] = True
@@ -833,11 +837,11 @@ def handle_rar_check(fpath, release_srr, release, srr_finfo):
         for match in srr_finfo:
             full_match_path = os.path.join(fpath, os.path.normpath(match))
             if not os.path.exists(full_match_path):
-                verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing RAR file: {match}")
+                verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing RAR file: {os.path.normpath(match)}")
                 missing_files.append(os.path.join(release['release'], os.path.normpath(match)))
                 missing_rar += 1
             else:
-                verbose(f"\t\t - {utils.res.SUCCESS} -> {match}")
+                verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
 
     # If its a music/mvid release
     else:
@@ -846,11 +850,11 @@ def handle_rar_check(fpath, release_srr, release, srr_finfo):
         for match in srr_sfv_info:
             full_match_path = os.path.join(fpath, os.path.normpath(match))
             if not os.path.exists(full_match_path):
-                verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing file: {match}")
+                verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing file: {os.path.normpath(match)}")
                 missing_files.append(os.path.join(release['release'], os.path.normpath(match)))
                 missing_rar += 1
             else:
-                verbose(f"\t\t - {utils.res.SUCCESS} -> {match}")
+                verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
 
     release_list[release['release']]['rescene'] = True    
     if missing_rar == 0:
@@ -910,7 +914,8 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
             verbose(f"{utils.res.FAIL} -> more than one SRS in this SRR. Please reconstruct manually.")
             return None
         else:
-            srs_path = release_srs[0][0]
+            srs_path = release_srs[0]
+            verbose(f"{utils.res.SUCCESS}")
 
     if srs_path:
         sample = SRS(srs_path)
@@ -955,6 +960,9 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                         missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
                         if not args['keep_srs'] and os.path.exists(srs_path):
                             os.remove(srs_path)
+                else:
+                    if not args['keep_srs'] and os.path.exists(srs_path):
+                        os.remove(srs_path)                    
             else:
                 verbose("-------------------------------")
                 verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")
@@ -986,6 +994,9 @@ def check_proof_and_sample(args, release_srr, release, fpath, proof_path, srs_pa
 
 def check_subtitles(args, fpath, doutput, release):
     # Function to manage the check of the Subs .rar
+    sub_srr = []
+    sub_file = []
+    idx_file = []
     sub_srr, sub_file, idx_file = find_sub_files(doutput, fpath)
 
     # List all directories in doutput
@@ -994,7 +1005,7 @@ def check_subtitles(args, fpath, doutput, release):
     # Create a dictionary with lowercase names for case-insensitive lookup
     all_dirs_lower = {d.lower(): d for d in all_dirs}
 
-    sub_sfv = None
+    sub_sfv = []
     for sub_dir in ["Sub", "Subs", "Subpack", "Subtitles"]:
         sub_dir_lower = sub_dir.lower()
 
@@ -1006,16 +1017,17 @@ def check_subtitles(args, fpath, doutput, release):
 
             # Verify if the path exists
             if os.path.exists(sub_dir_path):
-                sub_sfv = find_file_by_extension(sub_dir_path, ".sfv")
-                break
-
+                sub_sfv = find_sub_files_by_extension(sub_dir_path, ".sfv")
+                     
     # We can't know in an other way that find a .sfv file inside a Subs dir if the release have a Subs or not
-    if not sub_sfv or not os.path.exists(sub_sfv):
+    if not sub_sfv or not any(os.path.exists(sfv) for sfv in sub_sfv):
         release_list[release['release']]['resubs'] = True
         return # Maybe the release don't have a Subs .rar
     
-    if not check_crc_and_fix(sub_sfv, fpath, sub_srr, sub_file, idx_file, args, release): # Check CRC failed
-        process_subtitles(args, fpath, doutput, release) # We launch the rebuild from the start function exactly like -vaf
+    for sfv_file in sub_sfv:
+        if not check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, release): # Check CRC failed
+            for srr_file in sub_srr:
+                process_subtitles(args, fpath, doutput, release) # We launch the rebuild from the start function exactly like -vaf
 
     cleanup_files(args, release, sub_srr) # Clean .srr etc...
 
@@ -1132,7 +1144,7 @@ if __name__ == "__main__":
 
     if not args['search_srrdb']:
         # Verify weird inside releases
-        print(f"* Checking if releases are clean...")
+        print(f"\n* Checking if releases are clean...")
         print(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
         print(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
         if args['output']:
@@ -1154,16 +1166,16 @@ if __name__ == "__main__":
 
         # Print every failed things
         if len(missing_files) > 0:
-            print("* Rescene process complete, the following files need to be manually acquired:")
+            print("\n* Rescene process complete, the following files need to be manually acquired:")
             print(*missing_files, sep='\n')
 
         if len(compressed_release) > 0:
-            print("* Rescene process complete, the following files were compressed and need to be manually acquired:")
+            print("\n* Rescene process complete, the following files were compressed and need to be manually acquired:")
             print(*compressed_release, sep='\n')
 
         if len(scanned_nothing_found) > 0:
-            print("* Rescene process complete, the following files were not found and need to be manually acquired:")
+            print("\n* Rescene process complete, the following files were not found and need to be manually acquired:")
             print(*scanned_nothing_found, sep='\n')
 
     # Print succes ratio
-    print(f"* Rescene process complete: {success_release} completed of {scanned_release} scanned")
+    print(f"\n* Rescene process complete: {success_release} completed of {scanned_release} scanned")

@@ -69,12 +69,31 @@ class SRR:
     def get_archived_crc_by_fname(self, fname):
         return [k.crc32 for k in info(self.filename)['archived_files'].values() if k.file_name == fname]
 
+    def get_archived_crc(self):
+        return [k.crc32 for k in info(self.filename)['archived_files'].values()]
+
     def get_srs(self, path):
         if not os.path.isdir(path):
             raise AttributeError("path must be a valid directory")
 
         srs_files = [sfile for sfile in info(self.filename)['stored_files'].keys() if sfile.lower().endswith(".srs")]
-        return [extract_files(self.filename, path, extract_paths=True, packed_name=sfile) for sfile in srs_files]
+        extracted_paths = []
+
+        # Iterate over each .srs file and extract only the path (ignore success/failure tuple)
+        for sfile in srs_files:
+            result = extract_files(self.filename, path, extract_paths=True, packed_name=sfile)
+            
+            # If the result is a tuple, extract only the first element (path)
+            if isinstance(result, list):
+                for item in result:
+                    if isinstance(item, tuple):
+                        extracted_paths.append(item[0])
+                    else:
+                        extracted_paths.append(item)
+            else:
+                extracted_paths.append(result[0] if isinstance(result, tuple) else result)
+
+        return extracted_paths
 
     def get_srs_size(self, path):
         if not os.path.isdir(path):
@@ -87,11 +106,25 @@ class SRR:
         return [sfile for sfile in info(self.filename)['stored_files'].keys() if sfile.lower().endswith(('.jpg', '.jpeg', '.png'))]
 
     def extract_stored_files_regex(self, path, regex=".*"):
+        # Check if the provided path is a valid directory
         if not os.path.isdir(path):
             raise AttributeError("path must be a valid directory")
 
-        return [item for key in info(self.filename)["stored_files"].keys() if re.search(regex, key)
-            for item in extract_files(self.filename, path, extract_paths=True, packed_name=key)]
+        extracted_files = []
+
+        for key in info(self.filename)["stored_files"].keys():
+            # Check if the filename matches the regex pattern
+            if re.search(regex, key):
+                destination_file_path = os.path.join(path, os.path.normpath(key))
+                
+                # Check if the file already exists
+                if not os.path.exists(destination_file_path):
+                    extracted = extract_files(self.filename, path, extract_paths=True, packed_name=key)
+                    extracted_files.extend(extracted)
+                else:
+                    print(f"\t\t - {os.path.normpath(key)} already exists, skipping extraction.")
+        
+        return extracted_files
 
     def reconstruct_rars(self, dinput, doutput, hints, rarfolder, tmpfolder):
         if not os.path.isdir(dinput) or not os.path.isdir(doutput):
