@@ -143,6 +143,10 @@ NEW IN V2.0
 * Added orange color when a RAR reconstruction is using compression method
 * Added retrocompatibility with ReSample .NET 1.2 for very old .srs who actually can be rebuild by it but not by PyRescene-0.7
 * Added support for rebuild compressed RAR with Linux
+* Added support for multiple .rar subs in Subs dir
+* Added Skip extracting stored files in SRR if already exist
+* Fixed get_srs() to directly exctract .srs if .srr contain .srs but already present so not extracted the first time
+* Fixed some subs stuff...
 * Maybe more but I don't remember...
 
 
