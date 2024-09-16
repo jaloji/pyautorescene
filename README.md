@@ -2,7 +2,7 @@ Forked
 ------
 Forked from [sticki](https://bitbucket.org/sticki/pyautorescene)  
 
-pyautorescene
+pyautorescene 2.0
 =============
 pyautorescene automates the process of returning un-rarred scene releases back into their former glory.  It makes use of [PyReScene](https://github.com/srrDB/pyrescene) and [srrDB](http://srrdb.com) to make the whole process has hands off as possible. 
 With this fork, it is possible to log in your srrdb account to bypass the daily download limit of srr. Redirect for srrxx is automatic don't worry about it...
