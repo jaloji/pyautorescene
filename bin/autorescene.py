@@ -355,6 +355,7 @@ def reconstruct_rars(args, release_srr, fpath, doutput, srr_finfo, release):
         if release_srr.get_is_compressed():
             verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
         release_srr.reconstruct_rars(os.path.dirname(fpath), doutput, rename_hints, utils.res.RAR_VERSION, utils.res.SRR_TEMP_FOLDER)
+
     except Exception as e:
         verbose(f"{utils.res.FAIL} -> {e}")
         missing_rar += 1
@@ -527,7 +528,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
         rar_name_2.append(get_first_rar_name(subs_srr_2.get_rars_name()))   
         archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr_2, sub_file, idx_file) 
 
-        rename_hints_subs = {subs_srr_2.filename: archived_name[0]}
+        rename_hints_subs = {os.path.basename(archived_names_to_search[0]): archived_name[0]}
         pair_success = reconstruct_rar(subs_srr_2, archived_names_to_search, idx_file, rename_hints_subs)
         success = success or pair_success
 
@@ -535,7 +536,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
         # Reconstruct the second RAR if we have multiple .rar inside the Subs .rar
         if len(sub_srr_2) > 1:
             verbose("\t - Reconstructing second RAR for Subs")
-            rename_hints_subs = {subs_srr.filename: get_first_rar_name(subs_srr.get_rars_name())}
+            rename_hints_subs = {rar_name_2[0]: rar_name_2[0]}
             reconstruct_rar(subs_srr, [os.path.join(os.path.dirname(sub_srr_2[0]), rar_name_2[0])], sub_file, rename_hints_subs)
         # Reconstruct the second RAR if we have one .rar inside the Subs .rar
         else:
@@ -543,7 +544,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
             archived_name = []
             archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file) 
 
-            rename_hints_subs = {subs_srr.filename: archived_name[0]}
+            rename_hints_subs = {archived_name[0]: archived_name[0]}
             verbose("\t - Reconstructing second RAR for Subs")
             reconstruct_rar(subs_srr, archived_names_to_search, sub_file, rename_hints_subs)
 
@@ -589,7 +590,7 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
         archived_name = []
         archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file) 
 
-        rename_hints_subs = {subs_srr.filename: archived_name[0]}
+        rename_hints_subs = {os.path.basename(archived_names_to_search[0]): archived_name[0]}
         return reconstruct_rar(subs_srr, archived_names_to_search, sub_file, rename_hints_subs)
 
 def cleanup_files(args, release, sub_srr):
@@ -1018,7 +1019,7 @@ def check_subtitles(args, fpath, doutput, release):
             # Verify if the path exists
             if os.path.exists(sub_dir_path):
                 sub_sfv = find_sub_files_by_extension(sub_dir_path, ".sfv")
-                     
+
     # We can't know in an other way that find a .sfv file inside a Subs dir if the release have a Subs or not
     if not sub_sfv or not any(os.path.exists(sfv) for sfv in sub_sfv):
         release_list[release['release']]['resubs'] = True
