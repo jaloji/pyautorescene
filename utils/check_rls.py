@@ -223,19 +223,22 @@ def check_bad_files(rlsname, rel_path, release_type):
     return release_status
 
 def run_checks(rlsname):
+    output = [] 
     try:
         rls_type = get_release_type(os.path.normpath(rlsname))
         status = check_bad_files(os.path.normpath(rlsname), os.path.basename(rlsname), rls_type)
         if status == "OK":
             if rls_type == "UNKNOWN":
-                print(f" - {utils.res.SUCCESS} -> {rlsname} -> {utils.res.WARNING}{rls_type} -> passed all checks.")
+                output.append(f"\t - {utils.res.SUCCESS} -> {rlsname} -> {utils.res.WARNING}{rls_type} -> passed all checks.")
             else:
-                print(f" - {utils.res.SUCCESS} -> {rlsname} -> {rls_type} -> passed all checks.")
+                output.append(f"\t - {utils.res.SUCCESS} -> {rlsname} -> {rls_type} -> passed all checks.")
         else:
             if rls_type == "UNKNOWN":
-                print(f" - {utils.res.FAIL} -> {rlsname} -> {utils.res.WARNING}{rls_type} -> {status}")
+                output.append(f"\t - {utils.res.FAIL} -> {rlsname} -> {utils.res.WARNING}{rls_type} -> {status}")
             else:
-                print(f" - {utils.res.FAIL} -> {rlsname} -> {rls_type} -> {status}")
+                output.append(f"\t - {utils.res.FAIL} -> {rlsname} -> {rls_type} -> {status}")
 
     except Exception as e:
-        print(f" - {utils.res.FAIL} -> {rlsname} -> Error: {str(e)}")
+        output.append(f"\t - {utils.res.FAIL} -> {rlsname} -> Error: {str(e)}")
+
+    return output

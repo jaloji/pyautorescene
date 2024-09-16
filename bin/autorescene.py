@@ -27,6 +27,7 @@ release_list = dict()
 missing_files = []
 compressed_release = []
 scanned_nothing_found = []
+rls_check = []
 missing_rar = 0
 
 def arg_parse():
@@ -767,6 +768,7 @@ def check_file(args, fpath):
     global missing_rar
     global success_release
     global scanned_release
+    global rls_check
 
     if not is_valid_file(args, fpath):
         return False
@@ -826,6 +828,11 @@ def check_file(args, fpath):
 
     if missing_rar > 0:
         success_release -= 1
+    
+    chk = utils.check_rls.run_checks(release_douput)
+    for c in chk:
+        verbose(c)
+    rls_check.extend(chk)
 
 def handle_rar_check(fpath, release_srr, release, srr_finfo):
     # Function if -vc command called, we check only the presence of every files inside the .srr
@@ -1037,6 +1044,7 @@ def check_dir(args, fpath):
     global missing_rar
     global success_release
     global scanned_release
+    global rls_check
 
     # We don't want to check these dirs
     pattern = r'(dvd|cd|dis[ck])[0-9][0-9]?|samples?|proofs?|subs?|subpacks?|subtitles?'
@@ -1087,6 +1095,10 @@ def check_dir(args, fpath):
 
     if missing_rar > 0:
         success_release -= 1
+    
+    chk = utils.check_rls.run_checks(fpath)
+    verbose(chk)
+    rls_check.extend(chk)
 
 if __name__ == "__main__":
     args = arg_parse()
@@ -1145,38 +1157,23 @@ if __name__ == "__main__":
 
     if not args['search_srrdb']:
         # Verify weird inside releases
-        print(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean...{utils.res.RESET}")
-        print(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
-        print(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
-        if args['output']:
-            if isinstance(args['output'], str):
-                for path in [args['output']]:
-                    if os.path.isdir(path):
-                        for entry in os.listdir(path):
-                            full_path = os.path.join(path, entry)
-                            if os.path.isdir(full_path):
-                                utils.check_rls.run_checks(full_path)
+        verbose(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean:{utils.res.RESET}")
+        verbose(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
+        verbose(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
 
-        if args['check_extras']:
-            for path in args['input']:
-                if os.path.isdir(path):
-                    for entry in os.listdir(path):
-                        full_path = os.path.join(path, entry)
-                        if os.path.isdir(full_path):
-                            utils.check_rls.run_checks(full_path)
+    if len(rls_check) > 0:
+        verbose(f"\n".join(rls_check))
 
-        # Print every failed things
-        if len(missing_files) > 0:
-            print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files need to be manually acquired:{utils.res.RESET}")
-            print(*missing_files, sep='\n')
-
-        if len(compressed_release) > 0:
-            print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were compressed and need to be manually acquired:{utils.res.RESET}")
-            print(*compressed_release, sep='\n')
-
-        if len(scanned_nothing_found) > 0:
-            print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were not found and need to be manually acquired:{utils.res.RESET}")
-            print(*scanned_nothing_found, sep='\n')
-
-    # Print succes ratio
-    print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned{utils.res.RESET}")
+    # Print every failed things
+    if len(missing_files) > 0:
+        verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files need to be manually acquired:{utils.res.RESET}\n" + "\n".join(missing_files))
+                                       
+    if len(compressed_release) > 0:
+        verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were compressed and need to be manually acquired:{utils.res.RESET}\n" + "\n".join(compressed_release))
+                                            
+    if len(scanned_nothing_found) > 0:
+        verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were not found and need to be manually acquired:{utils.res.RESET}\n" + "\n".join(scanned_nothing_found))
+                                                   
+    # Ensure success_release is non-negative (it mean that nothing has been reconstruct)
+    success_release = max(0, success_release)
+    verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned{utils.res.RESET}")
