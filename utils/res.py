@@ -8,6 +8,7 @@ from colorama import Fore, Style
 SUCCESS = Fore.GREEN + "  [SUCCESS] " + Fore.RESET
 FAIL = Fore.RED + "  [FAIL] " + Fore.RESET
 ORANGE = '\033[38;5;208m'
+DARK_YELLOW = '\033[38;5;3m'
 RESET = Style.RESET_ALL
 WARNING = f"{ORANGE}  [WARNING] {RESET}"
 

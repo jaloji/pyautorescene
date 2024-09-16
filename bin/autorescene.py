@@ -237,7 +237,7 @@ def process_crc(args, fpath):
     # This function is used only for potential release to rescene not Sample/Proof CRC calc
     global scanned_release
 
-    verbose(f"* Found potential file: {os.path.basename(fpath)}")
+    verbose(f"{utils.res.DARK_YELLOW}* Found potential file:{utils.res.RESET} {os.path.basename(fpath)}")
     verbose(f"\t - Calculating crc for file: {fpath}", end="")
     scanned_release += 1
     release_crc = calc_crc(fpath)
@@ -351,11 +351,11 @@ def reconstruct_rars(args, release_srr, fpath, doutput, srr_finfo, release):
 
     verbose("\t - Reconstructing original RARs from SRR", end="")
     rename_hints = {srr_finfo[0].file_name: os.path.basename(fpath)}
+
     try:
         if release_srr.get_is_compressed():
             verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
         release_srr.reconstruct_rars(os.path.dirname(fpath), doutput, rename_hints, utils.res.RAR_VERSION, utils.res.SRR_TEMP_FOLDER)
-
     except Exception as e:
         verbose(f"{utils.res.FAIL} -> {e}")
         missing_rar += 1
@@ -1048,7 +1048,7 @@ def check_dir(args, fpath):
     else:
         doutput = os.path.dirname(fpath)
 
-    verbose(f"* Found potential release: {os.path.basename(fpath)}")
+    verbose(f"{utils.res.DARK_YELLOW}* Found potential release:{utils.res.RESET} {os.path.basename(fpath)}")
     scanned_release += 1
     release = search_srrdb_dirname(fpath)
     if not release:
@@ -1145,7 +1145,7 @@ if __name__ == "__main__":
 
     if not args['search_srrdb']:
         # Verify weird inside releases
-        print(f"\n* Checking if releases are clean...")
+        print(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean...{utils.res.RESET}")
         print(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
         print(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
         if args['output']:
@@ -1167,16 +1167,16 @@ if __name__ == "__main__":
 
         # Print every failed things
         if len(missing_files) > 0:
-            print("\n* Rescene process complete, the following files need to be manually acquired:")
+            print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files need to be manually acquired:{utils.res.RESET}")
             print(*missing_files, sep='\n')
 
         if len(compressed_release) > 0:
-            print("\n* Rescene process complete, the following files were compressed and need to be manually acquired:")
+            print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were compressed and need to be manually acquired:{utils.res.RESET}")
             print(*compressed_release, sep='\n')
 
         if len(scanned_nothing_found) > 0:
-            print("\n* Rescene process complete, the following files were not found and need to be manually acquired:")
+            print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were not found and need to be manually acquired:{utils.res.RESET}")
             print(*scanned_nothing_found, sep='\n')
 
     # Print succes ratio
-    print(f"\n* Rescene process complete: {success_release} completed of {scanned_release} scanned")
+    print(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned{utils.res.RESET}")
