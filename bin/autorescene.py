@@ -1101,6 +1101,35 @@ def check_dir(args, fpath):
         utils.res.verbose(c)
     rls_check.extend(chk)
 
+def traverse_directories(input_paths, valid_extensions, process_file_func, use_progress_bar=False):
+    # Function to traverse directories
+    total_items = 0
+    if use_progress_bar:
+        for path in input_paths:
+            if os.path.isfile(path):
+                if os.path.splitext(path)[1].lower() in valid_extensions: 
+                    total_items += 1
+            elif os.path.isdir(path):
+                for _, _, files in os.walk(path):
+                    total_items += sum(1 for f in files if os.path.splitext(f)[1].lower() in valid_extensions)
+
+    current_item_count = 0
+    for path in input_paths:
+        if os.path.isfile(path):
+            if os.path.splitext(path)[1].lower() in valid_extensions:
+                process_file_func(path)
+                if use_progress_bar:
+                    current_item_count += 1
+                    progress_bar(current_item_count, total_items)
+        elif os.path.isdir(path):
+            for root, _, files in os.walk(path):
+                for file in files:
+                    if os.path.splitext(file)[1].lower() in valid_extensions:
+                        process_file_func(os.path.join(root, file))
+                        if use_progress_bar:
+                            current_item_count += 1
+                            progress_bar(current_item_count, total_items)
+
 if __name__ == "__main__":
     args = arg_parse()
     # initialize pretty colours
@@ -1131,31 +1160,32 @@ if __name__ == "__main__":
         utils.res.verbose(f"{utils.res.SUCCESS}")
 
     cwd = os.getcwd()
-    if args['check_extras']:
-        for path in args['input']:
-            if os.path.isdir(path):
-                for entry in os.listdir(path):
-                    full_path = os.path.join(path, entry)
-                    if os.path.isdir(full_path):
-                        check_dir(args, full_path)
-    else:
-        if args['search_srrdb']:
-            for path in args['input']:
-                if os.path.isfile(path):
-                    search_file(args, path)
-                elif os.path.isdir(path):
-                    for root, dirs, files in os.walk(path):
-                        for sfile in files:
-                            search_file(args, os.path.join(root, sfile))
-        else:
-            for path in args['input']:
-                if os.path.isfile(path):
-                    check_file(args, path)
-                elif os.path.isdir(path):
-                    for root, dirs, files in os.walk(path):
-                        for sfile in files:
-                            check_file(args, os.path.join(root, sfile))
 
+    # Ensure all extensions are lowercase
+    valid_extensions = [ext.lower() for ext in args['extension']]
+    
+    if not args['verbose']:
+        if args['check_extras']:
+            # Process directories with progress bar
+            traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: check_dir(args, p), use_progress_bar=True)
+        else:
+            if args['search_srrdb']:
+                traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: search_file(args, p), use_progress_bar=True)
+            else:
+                traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: check_file(args, p), use_progress_bar=True)
+    else:
+        # No progress bar, process files with all verbose details
+        if args['check_extras']:
+            traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: check_dir(args, p), use_progress_bar=False)
+        else:
+            if args['search_srrdb']:
+                traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: search_file(args, p), use_progress_bar=False)
+            else:
+                traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: check_file(args, p), use_progress_bar=False)
+
+    # Set the verbose flag to True to show the result
+    utils.res.set_verbose_flag(True)
+    
     if not args['search_srrdb']:
         # Verify weird inside releases
         utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean:{utils.res.RESET}")
