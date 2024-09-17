@@ -3,6 +3,7 @@ import re
 from rescene import info, extract_files, reconstruct
 from rescene.srr import display_info
 from utils.srs import SRS
+import utils.res
 
 class SRR:
     def __init__(self, filename, binary=None):
@@ -122,7 +123,7 @@ class SRR:
                     extracted = extract_files(self.filename, path, extract_paths=True, packed_name=key)
                     extracted_files.extend(extracted)
                 else:
-                    print(f"\t\t - {os.path.normpath(key)} already exists, skipping extraction.")
+                    utils.res.verbose(f"\t\t - {os.path.normpath(key)} already exists, skipping extraction.")
         
         return extracted_files
 

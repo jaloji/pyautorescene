@@ -3,6 +3,7 @@ import errno
 import tempfile
 import json
 import subprocess
+import re
 from colorama import Fore, Style
 
 SUCCESS = Fore.GREEN + "  [SUCCESS] " + Fore.RESET
@@ -35,6 +36,24 @@ if os.name == 'nt':
 else:
     # You need mono-complete package to run this
     SRS_NET_EXE = "/app/pyautorescene-master/utils/srs.exe"
+
+def set_verbose_flag(flag):
+    global verbose_flag
+    verbose_flag = flag
+
+def remove_ansi_escape_codes(text):
+    ansi_escape = re.compile(r'(?:\x1B[@-_][0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
+
+def verbose(string, end='\n'):
+    filename = 'autorescene.txt'
+    if verbose_flag:
+        # Print the string to the console
+        print(string, end=end)
+    
+    # Open the file in append mode and write the string
+    with open(filename, 'a') as file:
+        file.write(remove_ansi_escape_codes(string) + end)
 
 # Create a directory if it doesn't exist
 def mkdir(path):
@@ -121,7 +140,7 @@ def run_resample_net_executable(executable_path, *args):
         stderr_lines = []
         for stdout_line in iter(process.stdout.readline, ''):
             stdout_lines.append(stdout_line)
-            print(stdout_line, end='')
+            verbose(stdout_line, end='')
             if (stdout_line.startswith("Unable to") or
                 stdout_line.startswith("Could not locate") or
                 stdout_line.startswith("No A/V data was found") or
@@ -133,7 +152,7 @@ def run_resample_net_executable(executable_path, *args):
 
         for stderr_line in iter(process.stderr.readline, ''):
             stderr_lines.append(stderr_line)
-            print("Error:", stderr_line, end='')
+            verbose("Error:", stderr_line, end='')
 
         process.stdout.close()
         process.stderr.close()
@@ -143,10 +162,10 @@ def run_resample_net_executable(executable_path, *args):
         return ''.join(stdout_lines), ''.join(stderr_lines), fail
 
     except subprocess.CalledProcessError as e:
-        print(f"Error occurred: {e}")
+        verbose(f"Error occurred: {e}")
         return None, e.stderr, True
 
     except subprocess.TimeoutExpired as e:
-        print(f"Process timed out: {e}")
+        verbose(f"Process timed out: {e}")
         process.kill()
         return None, None, True

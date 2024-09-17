@@ -151,52 +151,52 @@ def search_srrdb_crc(crc, rlspath):
     # Search srrdb API for releases matching the provided CRC32
     global scanned_nothing_found
 
-    verbose("\t - Searching srrdb.com for matching CRC", end="")
+    utils.res.verbose("\t - Searching srrdb.com for matching CRC", end="")
     try:
         results = search_by("archive-crc:", crc)
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         return False
 
     if not results:
-        verbose(f"{utils.res.FAIL} -> No matching results")
+        utils.res.verbose(f"{utils.res.FAIL} -> No matching results")
         scanned_nothing_found.append(rlsname)
         return False
     else:
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
 
     # Handle multiple releases having the same CRC32
     if len(results) > 1:
-        verbose(f"\t\t {utils.res.FAIL} More than one release found matching CRC {crc}.")
-        verbose("\t - Searching srrdb.com for matching release name", end="")
+        utils.res.verbose(f"\t\t {utils.res.FAIL} More than one release found matching CRC {crc}.")
+        utils.res.verbose("\t - Searching srrdb.com for matching release name", end="")
         try:
             rlsname = os.path.basename(rlspath)
             results = utils.res.search_by_name(rlsname, s, isdir = False)
         except Exception as e:
-            verbose(f"{utils.res.FAIL} -> {e}")
+            utils.res.verbose(f"{utils.res.FAIL} -> {e}")
             return False
 
         if not results or len(results) > 1: # Handle multiple or 0 releases having the same name, can be the filename used with -vaf or -vs
-            verbose(f"{utils.res.FAIL} -> No matching results")
-            verbose("\t - Searching srrdb.com for matching OSO hash", end="")
+            utils.res.verbose(f"{utils.res.FAIL} -> No matching results")
+            utils.res.verbose("\t - Searching srrdb.com for matching OSO hash", end="")
             try:
                 OSOhash = calc_oso(rlspath)
                 results = search_by("isdbhash:", OSOhash)
             except Exception as e:
-                verbose(f"{utils.res.FAIL} -> {e}")
+                utils.res.verbose(f"{utils.res.FAIL} -> {e}")
                 return False
 
             if not results or len(results) > 1: # Handle multiple or 0 releases having the same OSO hash
-                verbose(f"\t\t {utils.res.FAIL} Nothing found or more than one release found matching OSO hash {OSOhash}. Maybe no SRR available on srrdb or you need to check it manually.")
+                utils.res.verbose(f"\t\t {utils.res.FAIL} Nothing found or more than one release found matching OSO hash {OSOhash}. Maybe no SRR available on srrdb or you need to check it manually.")
                 scanned_nothing_found.append(rlsname)
                 return False
             else:
-                verbose(f"{utils.res.SUCCESS}")
+                utils.res.verbose(f"{utils.res.SUCCESS}")
         else:
-            verbose(f"{utils.res.SUCCESS}")
+            utils.res.verbose(f"{utils.res.SUCCESS}")
 
     release = results[0]
-    verbose(f"\t\t - Matched release: {release['release']}")
+    utils.res.verbose(f"\t\t - Matched release: {release['release']}")
 
     return release
 
@@ -204,23 +204,23 @@ def search_srrdb_dirname(rlspath):
     # Search srrdb API for release matching the directory name
     global scanned_nothing_found
 
-    verbose("\t - Searching srrdb.com for matching release name", end="")
+    utils.res.verbose("\t - Searching srrdb.com for matching release name", end="")
     try:
         rlsname = os.path.basename(rlspath)
         results = utils.res.search_by_name(rlsname, s, isdir = True)
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         return False
 
     if not results or len(results) > 1:
-        verbose(f"{utils.res.FAIL} -> No matching results")
+        utils.res.verbose(f"{utils.res.FAIL} -> No matching results")
         scanned_nothing_found.append(rlsname)
         return False
     else:
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
 
     release = results[0]
-    verbose(f"\t\t - Matched release: {release['release']}")
+    utils.res.verbose(f"\t\t - Matched release: {release['release']}")
 
     return release
 
@@ -238,14 +238,14 @@ def process_crc(args, fpath):
     # This function is used only for potential release to rescene not Sample/Proof CRC calc
     global scanned_release
 
-    verbose(f"{utils.res.DARK_YELLOW}* Found potential file:{utils.res.RESET} {os.path.basename(fpath)}")
-    verbose(f"\t - Calculating crc for file: {fpath}", end="")
+    utils.res.verbose(f"{utils.res.DARK_YELLOW}* Found potential file:{utils.res.RESET} {os.path.basename(fpath)}")
+    utils.res.verbose(f"\t - Calculating crc for file: {fpath}", end="")
     scanned_release += 1
     release_crc = calc_crc(fpath)
     if not release_crc:
-        verbose(f"{utils.res.FAIL}")
+        utils.res.verbose(f"{utils.res.FAIL}")
     else:
-        verbose(f"{utils.res.SUCCESS} -> {release_crc}")
+        utils.res.verbose(f"{utils.res.SUCCESS} -> {release_crc}")
     return release_crc
 
 def search_file(args, fpath):
@@ -269,7 +269,7 @@ def search_file(args, fpath):
             release_list[release['release']] = dict()
             release_list[release['release']]['search'] = False
         elif release_list[release['release']]['search']:
-            verbose("\t - Skipping, already processed.")
+            utils.res.verbose("\t - Skipping, already processed.")
             scanned_release -= 1
             return True
 
@@ -282,27 +282,27 @@ def process_release_directory(args, release, doutput):
     if os.path.basename(doutput.lower()) != release['release'].lower():
         doutput = os.path.join(doutput, release['release'])
         if not os.path.isdir(doutput):
-            verbose(f"\t - Creating output directory: {doutput}", end="")
+            utils.res.verbose(f"\t - Creating output directory: {doutput}", end="")
             try:
                 utils.res.mkdir(doutput)
             except Exception as e:
-                verbose(f"{utils.res.FAIL} -> Unable to create directory: {e}")
+                utils.res.verbose(f"{utils.res.FAIL} -> Unable to create directory: {e}")
                 return False
             else:
-                verbose(f"{utils.res.SUCCESS}")
-    verbose(f"\t - Setting output directory to: {doutput}")
+                utils.res.verbose(f"{utils.res.SUCCESS}")
+    utils.res.verbose(f"\t - Setting output directory to: {doutput}")
     return doutput
 
 def download_srr(release):
     # Download .srr file from srrdb.com
-    verbose("\t - Downloading SRR from srrdb.com", end="")
+    utils.res.verbose("\t - Downloading SRR from srrdb.com", end="")
     try:
         srr_path = utils.res.download_srr(release, s)
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         return None
     else:
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
         return srr_path
 
 def rename_file_if_needed(fpath, doutput, srr_finfo):
@@ -310,28 +310,28 @@ def rename_file_if_needed(fpath, doutput, srr_finfo):
     if len(srr_finfo) != 1:
         return False
     if srr_finfo[0].file_name != os.path.basename(fpath):
-        verbose(f"\t\t - file has been renamed, renaming to: {srr_finfo[0].file_name}", end="")
+        utils.res.verbose(f"\t\t - file has been renamed, renaming to: {srr_finfo[0].file_name}", end="")
         (ret, mesg) = copy_file(fpath, os.path.join(doutput, srr_finfo[0].file_name))
         if not ret:
-            verbose(f"{utils.res.FAIL} -> {mesg}")
+            utils.res.verbose(f"{utils.res.FAIL} -> {mesg}")
         else:
-            verbose(f"{utils.res.SUCCESS}")
+            utils.res.verbose(f"{utils.res.SUCCESS}")
 
 def extract_stored_files(release_srr, doutput, release, srr_finfo):
     # Extract stored files from .srr file based on regex filter
-    verbose("\t - Extracting stored files from SRR")
+    utils.res.verbose("\t - Extracting stored files from SRR")
     regex = "^(?i:(?:(.+\.)((?!txt$)[^.]*)|[^.]+))$" if srr_finfo else "^(?i:(?:(.+\.)((?!srs$)[^.]*)|[^.]+))$"
     try:
         matches = release_srr.extract_stored_files_regex(doutput, regex=regex)
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         return False
     else:
         srs_path = None
         proof_path = None
         # Save path for Sample/Proof and fix crashed when multiple .srs or Proofs
         for match in matches:
-            verbose(f"\t\t - {os.path.relpath(match[0], doutput)}{utils.res.SUCCESS}")
+            utils.res.verbose(f"\t\t - {os.path.relpath(match[0], doutput)}{utils.res.SUCCESS}")
             if srs_path is None and match[0].lower().endswith(".srs"):
                 srs_path = match[0]
             if proof_path is None and match[0].lower().endswith((".jpg", ".jpeg", ".png")):
@@ -350,20 +350,20 @@ def reconstruct_rars(args, release_srr, fpath, doutput, srr_finfo, release):
     global success_release
     global missing_rar
 
-    verbose("\t - Reconstructing original RARs from SRR", end="")
+    utils.res.verbose("\t - Reconstructing original RARs from SRR", end="")
     rename_hints = {srr_finfo[0].file_name: os.path.basename(fpath)}
 
     try:
         if release_srr.get_is_compressed():
-            verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
+            utils.res.verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
         release_srr.reconstruct_rars(os.path.dirname(fpath), doutput, rename_hints, utils.res.RAR_VERSION, utils.res.SRR_TEMP_FOLDER)
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         missing_rar += 1
         if release_srr.get_is_compressed():
             compressed_release.append(release['release'])
     else:
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
     
     release_list[release['release']]['rescene'] = True
     if missing_rar == 0:
@@ -373,48 +373,48 @@ def reconstruct_rars(args, release_srr, fpath, doutput, srr_finfo, release):
 def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
     if not srs_path:
         # Extract .srs file if something going wrong when we save the path before
-        verbose("\t\t - Extracting SRS from SRR file for Sample reconstruction", end="")
+        utils.res.verbose("\t\t - Extracting SRS from SRR file for Sample reconstruction", end="")
         release_srs = release_srr.get_srs(doutput)
         if not release_srs:
-            verbose(f"\t - No SRS found for sample recreation {utils.res.FAIL}")
+            utils.res.verbose(f"\t - No SRS found for sample recreation {utils.res.FAIL}")
             return
         elif len(release_srs) > 1:
-            verbose(f"{utils.res.FAIL} -> more than one SRS in this SRR. Please reconstruct manually.")
+            utils.res.verbose(f"{utils.res.FAIL} -> more than one SRS in this SRR. Please reconstruct manually.")
             return None
         else:
             srs_path = release_srs[0]
-            verbose(f"{utils.res.SUCCESS}")
+            utils.res.verbose(f"{utils.res.SUCCESS}")
 
     sample = SRS(srs_path)
-    verbose("\t - Recreating Sample .. expect output from SRS\n-------------------------------")
+    utils.res.verbose("\t - Recreating Sample .. expect output from SRS\n-------------------------------")
     try:
         sample.recreate(fpath, os.path.dirname(srs_path))
     except Exception as e:
-        verbose("-------------------------------")
-        verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample: {e}.")
+        utils.res.verbose("-------------------------------")
+        utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample: {e}.")
         if os.path.exists(fpath):
             try:
-                verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
+                utils.res.verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
                 output, error, fail = utils.res.run_resample_net_executable(utils.res.SRS_NET_EXE, srs_path, fpath, "-o", os.path.dirname(srs_path))
                 
                 if fail == True:
-                    verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
+                    utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
 
             except Exception as e:
-                verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
+                utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
 
         # Attempt to find the sample on local disk if recreation fails when -vaf or -f command is called 
         if args['find_sample']:
-            verbose("\t - Searching for sample on local disk")
+            utils.res.verbose("\t - Searching for sample on local disk")
             sample_file = find_file(os.path.dirname(fpath), sample.get_filename(), sample.get_crc())
             if sample_file:
-                verbose(f"\t\t - {utils.res.SUCCESS} - Found sample -> {sample_file}")
+                utils.res.verbose(f"\t\t - {utils.res.SUCCESS} - Found sample -> {sample_file}")
                 try:
                     shutil.move(sample_file, os.path.dirname(srs_path))
                     if not args['keep_srs'] and os.path.exists(srs_path):
                         os.remove(srs_path)
                 except Exception as e:
-                    verbose(f"\t\t - {utils.res.FAIL} - Could not copy file to {os.path.dirname(srs_path)} -> {e}")
+                    utils.res.verbose(f"\t\t - {utils.res.FAIL} - Could not copy file to {os.path.dirname(srs_path)} -> {e}")
                     missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
                     if not args['keep_srs'] and os.path.exists(srs_path):
                         os.remove(srs_path)
@@ -427,13 +427,13 @@ def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
             if not args['keep_srs'] and os.path.exists(srs_path):
                 os.remove(srs_path)
     else:
-        verbose("-------------------------------")
-        verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")
+        utils.res.verbose("-------------------------------")
+        utils.res.verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")
         if not args['keep_srs']:
             if os.path.exists(srs_path):
                 os.remove(srs_path)
             else:
-                verbose("\t - Impossible to delete no SRS found %s" % (utils.res.FAIL))
+                utils.res.verbose("\t - Impossible to delete no SRS found %s" % (utils.res.FAIL))
     
     release_list[release['release']]['resample'] = True
 
@@ -503,16 +503,16 @@ def reconstruct_rar(srr, file, alt_file, rename_hints=None):
     if rename_hints is None:
         rename_hints = {srr.filename: os.path.basename(file[0])}
 
-    verbose("\t - Reconstructing RAR", end="")
+    utils.res.verbose("\t - Reconstructing RAR", end="")
     try:
         if srr.get_is_compressed():
-            verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
+            utils.res.verbose(f"\n\t - {utils.res.WARNING} -> RAR Compression is used, reconstruction may not work")
 
         srr.reconstruct_rars(os.path.dirname(file[0]), os.path.dirname(srr.filename), rename_hints, utils.res.RAR_VERSION, utils.res.SRR_TEMP_FOLDER)
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
         return True
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         return False
 
 def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
@@ -536,7 +536,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
     if success:
         # Reconstruct the second RAR if we have multiple .rar inside the Subs .rar
         if len(sub_srr_2) > 1:
-            verbose("\t - Reconstructing second RAR for Subs")
+            utils.res.verbose("\t - Reconstructing second RAR for Subs")
             rename_hints_subs = {rar_name_2[0]: rar_name_2[0]}
             reconstruct_rar(subs_srr, [os.path.join(os.path.dirname(sub_srr_2[0]), rar_name_2[0])], sub_file, rename_hints_subs)
         # Reconstruct the second RAR if we have one .rar inside the Subs .rar
@@ -546,7 +546,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
             archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file) 
 
             rename_hints_subs = {archived_name[0]: archived_name[0]}
-            verbose("\t - Reconstructing second RAR for Subs")
+            utils.res.verbose("\t - Reconstructing second RAR for Subs")
             reconstruct_rar(subs_srr, archived_names_to_search, sub_file, rename_hints_subs)
 
     return rar_name_2, success
@@ -561,12 +561,12 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
         return False
 
     # Extract all stored files from the .srr with the regex filter, if we have Subs .rar inside .rar we will have one or multiple .rar exctracted
-    verbose("\t - Extracting stored files from Subs SRR", end="")
+    utils.res.verbose("\t - Extracting stored files from Subs SRR", end="")
     try:
         matches = subs_srr.extract_stored_files_regex(os.path.dirname(sub_srr), regex="^(?i:(?:(.+\.)((?!diz$)[^.]*)|[^.]+))$")
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
         return False
 
     all_srr_files = get_second_srr(matches)
@@ -632,20 +632,20 @@ def remove_from_missing_files(fpath, sfv_p, full_path):
 
 def fix_missing_file(full_path, filename, crc, sfv_p, fpath, sub_srr, sfv_file, args, release):
     # Attempt to find the missing Subs .rar file on the local disk with CRC, can be in right place but not with good name
-    verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing Subs file: {filename}")
-    verbose("\t - Searching for Subs on local disk")
+    utils.res.verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing Subs file: {filename}")
+    utils.res.verbose("\t - Searching for Subs on local disk")
 
     subs_file = find_file(os.path.dirname(fpath), filename, crc.upper())
     if subs_file:
-        verbose(f"\t\t - {utils.res.SUCCESS} - Found Subs -> {subs_file}")
+        utils.res.verbose(f"\t\t - {utils.res.SUCCESS} - Found Subs -> {subs_file}")
         try:
             shutil.move(subs_file, os.path.dirname(sfv_file))
             cleanup_files(args, release, sub_srr)
             return True
         except Exception as e:
-            verbose(f"\t\t - {utils.res.FAIL} -> Could not copy file to {os.path.dirname(sfv_file)} -> {e}")
+            utils.res.verbose(f"\t\t - {utils.res.FAIL} -> Could not copy file to {os.path.dirname(sfv_file)} -> {e}")
     else:
-        verbose(f"\t\t - {utils.res.FAIL} -> Subs RAR not found")
+        utils.res.verbose(f"\t\t - {utils.res.FAIL} -> Subs RAR not found")
 
     # Handling missing file scenario
     add_to_missing_files(fpath, sfv_p, filename)
@@ -656,19 +656,19 @@ def validate_crc(full_path, fpath, sfv_p, expected_crc):
     hash_crc = calc_crc(full_path)
     
     if hash_crc.lower() == expected_crc.lower():
-        verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.basename(full_path)} {hash_crc.upper()}")
+        utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.basename(full_path)} {hash_crc.upper()}")
         # Remove the relative path from missing_files if it exists or finally rebuilded or founded
         remove_from_missing_files(fpath, sfv_p, full_path)
         return True
     else:
-        verbose(f"\t\t - {utils.res.FAIL} -> {os.path.basename(full_path)} our hash {hash_crc.upper()} does not match {expected_crc.upper()}")
+        utils.res.verbose(f"\t\t - {utils.res.FAIL} -> {os.path.basename(full_path)} our hash {hash_crc.upper()} does not match {expected_crc.upper()}")
         # Add the relative path to missing_files if not already present
         add_to_missing_files(fpath, sfv_p, os.path.basename(full_path))
         return False
 
 def check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, release):
     # Open and read the Subs .sfv file line by line
-    verbose(f"\t - Checking if RAR for Subs have good CRC in {os.path.dirname(sfv_file)}")
+    utils.res.verbose(f"\t - Checking if RAR for Subs have good CRC in {os.path.dirname(sfv_file)}")
     try:
         with open(sfv_file, "r") as sfv_f:
             sfv_p = os.path.dirname(sfv_file)
@@ -685,7 +685,7 @@ def check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, releas
                     return validate_crc(full_path, fpath, sfv_p, crc) # Subs .rar exist we need to check his CRC
 
     except Exception as e:
-        verbose(f"\t\t - {utils.res.FAIL} - Could not open SFV file {sfv_file} -> {e}")
+        utils.res.verbose(f"\t\t - {utils.res.FAIL} - Could not open SFV file {sfv_file} -> {e}")
         return False
 
 def find_sub_files(doutput, fpath):
@@ -728,7 +728,7 @@ def process_subtitles(args, fpath, doutput, release):
     if not all([sub_srr, sub_file, idx_file]):
         return False
 
-    verbose("\t - Reconstructing original RARs for Subs")
+    utils.res.verbose("\t - Reconstructing original RARs for Subs")
     # List all directories in doutput
     all_dirs = [d for d in os.listdir(doutput) if os.path.isdir(os.path.join(doutput, d))]
 
@@ -751,7 +751,7 @@ def process_subtitles(args, fpath, doutput, release):
                 sub_sfv = find_sub_files_by_extension(sub_dir_path, ".sfv")
     
     if not sub_sfv or not any(os.path.exists(sfv) for sfv in sub_sfv):
-        verbose(f"\t - SFV file not found: {sub_sfv}")
+        utils.res.verbose(f"\t - SFV file not found: {sub_sfv}")
         return False
     
     for srr_file in sub_srr:
@@ -795,7 +795,7 @@ def check_file(args, fpath):
             release_list[release['release']]['extract'] = False
             release_list[release['release']]['resubs'] = False
         elif release_list[release['release']]['rescene'] and release_list[release['release']]['extract'] and release_list[release['release']]['resample'] and release_list[release['release']]['resubs']:
-            verbose("\t - Skipping, already processed.")
+            utils.res.verbose("\t - Skipping, already processed.")
             scanned_release -= 1
             return True
 
@@ -818,7 +818,7 @@ def check_file(args, fpath):
         
     if (args['resample'] or args['auto_reconstruct']) and not release_list[release['release']]['resample']:
         if release['hasSRS'] != "yes":
-            verbose(f"\t - No SRS found for sample recreation {utils.res.FAIL}")
+            utils.res.verbose(f"\t - No SRS found for sample recreation {utils.res.FAIL}")
             release_list[release['release']]['resample'] = True
         else:
             recreate_sample(args, release, release_srr, fpath, release_douput, srs)
@@ -831,7 +831,7 @@ def check_file(args, fpath):
     
     chk = utils.check_rls.run_checks(release_douput)
     for c in chk:
-        verbose(c)
+        utils.res.verbose(c)
     rls_check.extend(chk)
 
 def handle_rar_check(fpath, release_srr, release, srr_finfo):
@@ -841,28 +841,28 @@ def handle_rar_check(fpath, release_srr, release, srr_finfo):
 
     # If its a RAR release
     if srr_finfo:
-        verbose(f"\t - Checking if all RAR are present in {fpath}")
+        utils.res.verbose(f"\t - Checking if all RAR are present in {fpath}")
         for match in srr_finfo:
             full_match_path = os.path.join(fpath, os.path.normpath(match))
             if not os.path.exists(full_match_path):
-                verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing RAR file: {os.path.normpath(match)}")
+                utils.res.verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing RAR file: {os.path.normpath(match)}")
                 missing_files.append(os.path.join(release['release'], os.path.normpath(match)))
                 missing_rar += 1
             else:
-                verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
+                utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
 
     # If its a music/mvid release
     else:
-        verbose(f"\t - Checking if all files are present in {fpath}")
+        utils.res.verbose(f"\t - Checking if all files are present in {fpath}")
         srr_sfv_info = release_srr.get_sfv_entries_name()
         for match in srr_sfv_info:
             full_match_path = os.path.join(fpath, os.path.normpath(match))
             if not os.path.exists(full_match_path):
-                verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing file: {os.path.normpath(match)}")
+                utils.res.verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing file: {os.path.normpath(match)}")
                 missing_files.append(os.path.join(release['release'], os.path.normpath(match)))
                 missing_rar += 1
             else:
-                verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
+                utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
 
     release_list[release['release']]['rescene'] = True    
     if missing_rar == 0:
@@ -877,7 +877,7 @@ def handle_crc_check(fpath, release_srr, release, srr_finfo):
     stored_files = release_srr.get_stored_files_name()
     sfv_paths = [os.path.join(fpath, os.path.normpath(fname)) for fname in stored_files if fname.endswith(".sfv")]
 
-    verbose(f"\t - Checking if all RAR have good CRC in {fpath}")
+    utils.res.verbose(f"\t - Checking if all RAR have good CRC in {fpath}")
     for sfv in sfv_paths:
         try:
             with open(sfv, "r") as sfv_f:
@@ -891,18 +891,18 @@ def handle_crc_check(fpath, release_srr, release, srr_finfo):
 
                     full_file_path = os.path.join(sfv_p, filename)
                     if not os.path.exists(full_file_path):
-                        verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing RAR file: {filename}")
+                        utils.res.verbose(f"\t\t - {utils.res.FAIL} -> Be careful missing RAR file: {filename}")
                         add_to_missing_files(fpath, sfv_p, filename)
                         continue
                     hash = calc_crc(full_file_path)
                     if hash.lower() == crc.lower():
-                        verbose(f"\t\t - {utils.res.SUCCESS} -> {filename} {hash.upper()}")
+                        utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {filename} {hash.upper()}")
                     else:
-                        verbose(f"\t\t - {utils.res.FAIL} -> {filename} our hash {hash.upper()} does not match {crc.upper()}")
+                        utils.res.verbose(f"\t\t - {utils.res.FAIL} -> {filename} our hash {hash.upper()} does not match {crc.upper()}")
                         add_to_missing_files(fpath, sfv_p, filename)
 
         except Exception as e:
-            verbose(f"\t\t - {utils.res.FAIL} - Could not open sfv file {sfv} -> {e}")
+            utils.res.verbose(f"\t\t - {utils.res.FAIL} - Could not open sfv file {sfv} -> {e}")
             continue
 
     release_list[release['release']]['rescene'] = True    
@@ -913,24 +913,24 @@ def handle_crc_check(fpath, release_srr, release, srr_finfo):
 def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, doutput, srr_finfo):
     # When -vc is called with or without --check-crc we try to find the sample first but we need the .srs file to have his CRC
     if not srs_path:
-        verbose("\t\t - Extracting SRS from SRR file for Sample reconstruction", end="")
+        utils.res.verbose("\t\t - Extracting SRS from SRR file for Sample reconstruction", end="")
         release_srs = release_srr.get_srs(doutput)
         if not release_srs:
-            verbose(f"\t - No SRS found for sample recreation %s {utils.res.FAIL}")
+            utils.res.verbose(f"\t - No SRS found for sample recreation %s {utils.res.FAIL}")
             return None
         elif len(release_srs) != 1:
-            verbose(f"{utils.res.FAIL} -> more than one SRS in this SRR. Please reconstruct manually.")
+            utils.res.verbose(f"{utils.res.FAIL} -> more than one SRS in this SRR. Please reconstruct manually.")
             return None
         else:
             srs_path = release_srs[0]
-            verbose(f"{utils.res.SUCCESS}")
+            utils.res.verbose(f"{utils.res.SUCCESS}")
 
     if srs_path:
         sample = SRS(srs_path)
-        verbose("\t - Searching for sample on local disk")
+        utils.res.verbose("\t - Searching for sample on local disk")
         sample_file = find_file(os.path.dirname(fpath), sample.get_filename(), sample.get_crc())
         if sample_file:
-            verbose(f"\t\t - {utils.res.SUCCESS} - Found sample -> {sample_file}")
+            utils.res.verbose(f"\t\t - {utils.res.SUCCESS} - Found sample -> {sample_file}")
             if os.path.dirname(sample_file.lower()) != os.path.dirname(srs_path.lower()): # We found it but it can be rename or not in the good place
                 try:
                     shutil.move(sample_file, os.path.dirname(srs_path))
@@ -938,7 +938,7 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                     if not args['keep_srs'] and os.path.exists(srs_path):
                         os.remove(srs_path)
                 except Exception as e:
-                    verbose(f"\t\t - {utils.res.FAIL} - Could not copy file to {os.path.dirname(srs_path)} -> {e}")
+                    utils.res.verbose(f"\t\t - {utils.res.FAIL} - Could not copy file to {os.path.dirname(srs_path)} -> {e}")
                     missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
                     if not args['keep_srs'] and os.path.exists(srs_path):
                         os.remove(srs_path)
@@ -946,25 +946,25 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                 if not args['keep_srs'] and os.path.exists(srs_path):
                     os.remove(srs_path)
         else:
-            verbose(f"\t - Sample found have Bad CRC or no sample found {utils.res.FAIL}")
-            verbose("\t - Recreating Sample .. expect output from SRS\n-------------------------------")
+            utils.res.verbose(f"\t - Sample found have Bad CRC or no sample found {utils.res.FAIL}")
+            utils.res.verbose("\t - Recreating Sample .. expect output from SRS\n-------------------------------")
             try:
                 sample.recreate(os.path.join(fpath, srr_finfo[0]), os.path.dirname(srs_path))
             except Exception as e:
-                verbose(f"-------------------------------\n\t - {utils.res.FAIL} -> failed to recreate sample: {e}.")
+                utils.res.verbose(f"-------------------------------\n\t - {utils.res.FAIL} -> failed to recreate sample: {e}.")
                 if os.path.exists(os.path.join(fpath, srr_finfo[0])):
                     try:
-                        verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
+                        utils.res.verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
                         output, error, fail = utils.res.run_resample_net_executable(utils.res.SRS_NET_EXE, srs_path, os.path.join(fpath, srr_finfo[0]), "-o", os.path.dirname(srs_path))
                         
                         if fail == True:
-                            verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
+                            utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
                             missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
                             if not args['keep_srs'] and os.path.exists(srs_path):
                                 os.remove(srs_path)
 
                     except Exception as e:
-                        verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
+                        utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
                         missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
                         if not args['keep_srs'] and os.path.exists(srs_path):
                             os.remove(srs_path)
@@ -972,8 +972,8 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                     if not args['keep_srs'] and os.path.exists(srs_path):
                         os.remove(srs_path)                    
             else:
-                verbose("-------------------------------")
-                verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")
+                utils.res.verbose("-------------------------------")
+                utils.res.verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")
                 release_list[release['release']]['resample'] = True
                 if not args['keep_srs'] and os.path.exists(srs_path):
                     os.remove(srs_path)
@@ -981,19 +981,19 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
 def check_proof_and_sample(args, release_srr, release, fpath, proof_path, srs_path, doutput, srr_finfo):
     # Function to search, check or find the Proof
     if proof_path:
-        verbose("\t - Searching for Proof on local disk")
+        utils.res.verbose("\t - Searching for Proof on local disk")
         proof_crc = calc_crc(proof_path)
         proof_file = find_file(os.path.dirname(fpath), os.path.basename(*release_srr.get_proof_filename()), proof_crc) # We use CRC to find the .jpg
         if proof_file and proof_file.lower() == proof_path.lower():
-            verbose(f"\t\t - {utils.res.SUCCESS} - Found proof -> {proof_file}")
+            utils.res.verbose(f"\t\t - {utils.res.SUCCESS} - Found proof -> {proof_file}")
         if proof_file and proof_file.lower() != proof_path.lower(): # We found it but maybe the Proof is renamed or not in the right place
-            verbose(f"\t\t - {utils.res.SUCCESS} - Found proof -> {proof_file}")
+            utils.res.verbose(f"\t\t - {utils.res.SUCCESS} - Found proof -> {proof_file}")
             try:
                 copy_file(proof_file, os.path.dirname(proof_path))
                 if not args['keep_srs'] and os.path.exists(proof_file):
                     os.remove(proof_file)
             except Exception as e:
-                verbose(f"\t\t - {utils.res.FAIL} - Could not copy proof file to {os.path.dirname(proof_path)} -> {e}")
+                utils.res.verbose(f"\t\t - {utils.res.FAIL} - Could not copy proof file to {os.path.dirname(proof_path)} -> {e}")
                 missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(proof_path)), release_srr.get_proof_filename()))
 
     # We can know if the .srr file have .srs inside or not
@@ -1056,7 +1056,7 @@ def check_dir(args, fpath):
     else:
         doutput = os.path.dirname(fpath)
 
-    verbose(f"{utils.res.DARK_YELLOW}* Found potential release:{utils.res.RESET} {os.path.basename(fpath)}")
+    utils.res.verbose(f"{utils.res.DARK_YELLOW}* Found potential release:{utils.res.RESET} {os.path.basename(fpath)}")
     scanned_release += 1
     release = search_srrdb_dirname(fpath)
     if not release:
@@ -1070,7 +1070,7 @@ def check_dir(args, fpath):
             release_list[release['release']]['extract'] = False
             release_list[release['release']]['resubs'] = False
         elif release_list[release['release']]['rescene'] and release_list[release['release']]['extract'] and release_list[release['release']]['resample'] and release_list[release['release']]['resubs']:
-            verbose("\t - Skipping, already processed.")
+            utils.res.verbose("\t - Skipping, already processed.")
             scanned_release -= 1
             return True
 
@@ -1097,7 +1097,8 @@ def check_dir(args, fpath):
         success_release -= 1
     
     chk = utils.check_rls.run_checks(fpath)
-    verbose(chk)
+    for c in chk:
+        utils.res.verbose(c)
     rls_check.extend(chk)
 
 if __name__ == "__main__":
@@ -1107,8 +1108,8 @@ if __name__ == "__main__":
     success_release = 0
     scanned_release = 0
 
-    #define verbose
-    verbose = print if args['verbose'] else lambda *a, **k: None
+    # Set the verbose flag in the module
+    utils.res.set_verbose_flag(args['verbose'])
 
     if not args['extension']:
         args['extension'] = ['.mkv', '.avi', '.mp4', '.iso']
@@ -1119,15 +1120,15 @@ if __name__ == "__main__":
     if args['output']:
         if not os.path.isdir(args['output']):
             sys.exit("output option needs to be a valid directory")
-        verbose(f"Setting output directory to: {args['output']}\n")
+        utils.res.verbose(f"Setting output directory to: {args['output']}\n")
 
-    verbose("\t - Connecting srrdb.com...", end="")
+    utils.res.verbose("\t - Connecting srrdb.com...", end="")
     try:
         s = SRRDB_LOGIN(utils.res.loginUrl, utils.res.loginData, utils.res.loginTestUrl, utils.res.loginTestString)
     except Exception as e:
-        verbose(f"{utils.res.FAIL} -> {e}")
+        utils.res.verbose(f"{utils.res.FAIL} -> {e}")
     else:
-        verbose(f"{utils.res.SUCCESS}")
+        utils.res.verbose(f"{utils.res.SUCCESS}")
 
     cwd = os.getcwd()
     if args['check_extras']:
@@ -1157,23 +1158,23 @@ if __name__ == "__main__":
 
     if not args['search_srrdb']:
         # Verify weird inside releases
-        verbose(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean:{utils.res.RESET}")
-        verbose(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
-        verbose(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
+        utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean:{utils.res.RESET}")
+        utils.res.verbose(f"Sometimes it was pred like that... sometimes there are extra weird things inside .srr...")
+        utils.res.verbose(f"If you have{utils.res.FAIL}or{utils.res.WARNING}you will have to verify by yourself.")
 
     if len(rls_check) > 0:
-        verbose(f"\n".join(rls_check))
+        utils.res.verbose(f"\n".join(rls_check))
 
     # Print every failed things
     if len(missing_files) > 0:
-        verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files need to be manually acquired:{utils.res.RESET}\n" + "\n".join(missing_files))
-                                       
+        utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files need to be manually acquired:{utils.res.RESET}\n" + "\n".join(missing_files))
+
     if len(compressed_release) > 0:
-        verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were compressed and need to be manually acquired:{utils.res.RESET}\n" + "\n".join(compressed_release))
-                                            
+        utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were compressed and need to be manually acquired:{utils.res.RESET}\n" + "\n".join(compressed_release))
+
     if len(scanned_nothing_found) > 0:
-        verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were not found and need to be manually acquired:{utils.res.RESET}\n" + "\n".join(scanned_nothing_found))
-                                                   
+        utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete, the following files were not found and need to be manually acquired:{utils.res.RESET}\n" + "\n".join(scanned_nothing_found))
+
     # Ensure success_release is non-negative (it mean that nothing has been reconstruct)
     success_release = max(0, success_release)
-    verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned{utils.res.RESET}")
+    utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned{utils.res.RESET}")
