@@ -132,7 +132,7 @@ If you have a dynamic IP or you encounter a disconnection which causes an error 
 - Searching srrdb.com for matching Release: release.name  [FAIL]  -> name 's' is not defined
 ```
 
-Then use the .bat/.sh file and relaunch the script **but before you need to edit .bat/.sh and change the username in the path by your own!**
+Then use the .bat/.sh file and relaunch the script **On Windows before you need to edit .bat and change the username in the path by your own!**
 
 NEW IN V2.0
 -----
