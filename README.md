@@ -8,6 +8,7 @@ pyautorescene automates the process of returning un-rarred scene releases back i
 With this fork, it is possible to log in your srrdb account to bypass the daily download limit of srr. Redirect for srrxx is automatic don't worry about it...
 Now it is also possible to add only nfo/sfv/Sample/Proof/Subs if you already have releases in scene format but no longer the unrarred .mkv (Can rebuild if you have something missing and you still have them in the same directory).
 Now it is also possible to search unrarred files against CRC just to check if they have .srr available or good CRC for exemple.
+If the script crashes for any reason everything done is print inside autorescene.txt
 
 Requirements on Windows
 ------------
@@ -147,6 +148,8 @@ NEW IN V2.0
 * Added Skip extracting stored files in SRR if already exist
 * Fixed get_srs() to directly exctract .srs if .srr contain .srs but already present so not extracted the first time
 * Fixed some subs stuff...
+* Fixed rls_check is now after each release only the result is print at the end to prevent any data loose if the script crashes
+* Added custom logger, works if -v is set or not
 * Maybe more but I don't remember...
 
 
