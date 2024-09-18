@@ -132,7 +132,13 @@ If you have a dynamic IP or you encounter a disconnection which causes an error 
 - Searching srrdb.com for matching Release: release.name  [FAIL]  -> name 's' is not defined
 ```
 
-Then use the .bat/.sh file and relaunch the script **On Windows before you need to edit .bat and change the username in the path by your own!**
+Then use the .bat/.sh file and relaunch the script **On Windows, before you need to edit .bat and change the username in the path by your own!**
+
+If you provided username/password or forgot to and you've something like this:
+```
+- Connecting srrdb.com...  [WARNING] Login failed, continuing with daily download limit of srr.
+```
+It's possible you made a mistake, you need to correct it in `utils/res.py` file. After that do: `python setup.py install` again and launch the .bat/sh  
 
 NEW IN V2.0
 -----
@@ -163,6 +169,7 @@ NEW IN V2.0
 * Fixed rls_check is now after each release only the result is print at the end to prevent any data loose if the script crashes
 * Added custom logger, works if -v is set or not
 * Added a progress bar and final stats when -v is not set
+* Fixed crashes if no srrdb account provided or mistake with login/pass now it just advertising you 
 * Maybe more but I don't remember...
 
 To Do
