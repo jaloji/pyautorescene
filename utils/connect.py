@@ -55,7 +55,7 @@ class SRRDB_LOGIN:
         self.userAgent = userAgent
         self.debug = debug
 
-        self.initialize_session(forceLogin)
+        self.logged_in = self.initialize_session(forceLogin)
 
     def modification_date(self, filename):
         t = os.path.getmtime(filename)
@@ -63,8 +63,8 @@ class SRRDB_LOGIN:
 
     def initialize_session(self, forceLogin):
         if not forceLogin and self.load_session_from_cache():
-            return
-        self.create_new_session()
+            return True
+        return self.create_new_session()
 
     def load_session_from_cache(self):
         if os.path.exists(self.sessionFile):
@@ -87,14 +87,22 @@ class SRRDB_LOGIN:
             if self.debug:
                 print("\t - Created new session with login")
             if self.loginTestUrl and self.loginTestString:
-                self.verify_login()
+                return self.verify_login()
 
         self.save_session_to_cache()
+        return False
 
     def verify_login(self):
         res = self.session.get(self.loginTestUrl)
         if self.loginTestString.lower() not in res.text.lower():
-            raise ValueError(f"Could not log into provided site '{self.loginUrl}' (did not find successful login string)")
+            #raise ValueError(f"Could not log into provided site '{self.loginUrl}' (did not find successful login string)")
+            if self.debug:
+                print(f"Login failed: could not find '{self.loginTestString}' in the response from {self.loginTestUrl}")
+            return False
+
+        if self.debug:
+            print("Login successful")
+        return True
 
     def save_session_to_cache(self):
         # always save (to update timeout)

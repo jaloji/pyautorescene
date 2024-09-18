@@ -77,6 +77,20 @@ def arg_parse():
 
     return vars(parser.parse_args())
 
+def progress_bar(current, total, bar_length=None):
+    # Get terminal width
+    if bar_length is None:
+        terminal_size = shutil.get_terminal_size()
+        # Adjust for files count display
+        bar_length = terminal_size.columns - 20
+    
+    progress = current / total
+    block = int(bar_length * progress)
+    bar = '█' * block + '-' * (bar_length - block)
+    
+    sys.stdout.write(f'\r|{bar}| {current}/{total} files')
+    sys.stdout.flush()
+
 def search_by(search_type, value):
     # Use search type by OSO hash or by CRC
     if search_type == "archive-crc:" and len(value) != 8:
@@ -1137,8 +1151,8 @@ if __name__ == "__main__":
     success_release = 0
     scanned_release = 0
 
-    # Set the verbose flag in the module
-    utils.res.set_verbose_flag(args['verbose'])
+    # Set the verbose flag to True to show srrdb connection
+    utils.res.set_verbose_flag(True)
 
     if not args['extension']:
         args['extension'] = ['.mkv', '.avi', '.mp4', '.iso']
@@ -1156,8 +1170,14 @@ if __name__ == "__main__":
         s = SRRDB_LOGIN(utils.res.loginUrl, utils.res.loginData, utils.res.loginTestUrl, utils.res.loginTestString)
     except Exception as e:
         utils.res.verbose(f"{utils.res.FAIL} -> {e}")
-    else:
+
+    if s and s.logged_in:
         utils.res.verbose(f"{utils.res.SUCCESS}")
+    else:
+        utils.res.verbose(f"{utils.res.WARNING}Login failed, continuing with daily download limit of srr.")
+
+    # Set the verbose flag in the module
+    utils.res.set_verbose_flag(args['verbose'])
 
     cwd = os.getcwd()
 
