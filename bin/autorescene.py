@@ -18,7 +18,7 @@ from utils.connect import SRRDB_LOGIN
 from utils.srr import SRR
 from utils.srs import SRS
 # Pyrescene source need to be installed
-from rescene.osohash import compute_hash, osohash_from
+from rescene.osohash import compute_hash
 import utils.res
 import utils.check_rls
 
@@ -83,11 +83,11 @@ def progress_bar(current, total, bar_length=None):
         terminal_size = shutil.get_terminal_size()
         # Adjust for files count display
         bar_length = terminal_size.columns - 20
-    
+
     progress = current / total
     block = int(bar_length * progress)
     bar = '█' * block + '-' * (bar_length - block)
-    
+
     sys.stdout.write(f'\r|{bar}| {current}/{total} files')
     sys.stdout.flush()
 
@@ -121,7 +121,7 @@ def calc_crc(fpath):
     with open(fpath, "rb") as file:
         for line in file:
             prev = zlib.crc32(line, prev)
-    
+
     return f"{prev & 0xFFFFFFFF:08X}"
 
 def calc_oso(fname):
@@ -129,7 +129,7 @@ def calc_oso(fname):
     if not os.path.isfile(fname):
         return None
 
-    oso_hash, file_size = compute_hash(fname)
+    oso_hash, _ = compute_hash(fname)
     return oso_hash
 
 def copy_file(finput, foutput):
@@ -174,7 +174,7 @@ def search_srrdb_crc(crc, rlspath):
 
     if not results:
         utils.res.verbose(f"{utils.res.FAIL} -> No matching results")
-        scanned_nothing_found.append(rlsname)
+        scanned_nothing_found.append(rlspath)
         return False
     else:
         utils.res.verbose(f"{utils.res.SUCCESS}")
@@ -334,7 +334,7 @@ def rename_file_if_needed(fpath, doutput, srr_finfo):
 def extract_stored_files(release_srr, doutput, release, srr_finfo):
     # Extract stored files from .srr file based on regex filter
     utils.res.verbose("\t - Extracting stored files from SRR")
-    regex = "^(?i:(?:(.+\.)((?!txt$)[^.]*)|[^.]+))$" if srr_finfo else "^(?i:(?:(.+\.)((?!srs$)[^.]*)|[^.]+))$"
+    regex = r"^(?i:(?:(.+\.)((?!txt$)[^.]*)|[^.]+))$" if srr_finfo else r"^(?i:(?:(.+\.)((?!srs$)[^.]*)|[^.]+))$"
     try:
         matches = release_srr.extract_stored_files_regex(doutput, regex=regex)
     except Exception as e:
@@ -378,7 +378,7 @@ def reconstruct_rars(args, release_srr, fpath, doutput, srr_finfo, release):
             compressed_release.append(release['release'])
     else:
         utils.res.verbose(f"{utils.res.SUCCESS}")
-    
+
     release_list[release['release']]['rescene'] = True
     if missing_rar == 0:
         success_release += 1
@@ -410,14 +410,14 @@ def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
             try:
                 utils.res.verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
                 output, error, fail = utils.res.run_resample_net_executable(utils.res.SRS_NET_EXE, srs_path, fpath, "-o", os.path.dirname(srs_path))
-                
+
                 if fail == True:
                     utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
 
             except Exception as e:
                 utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2: {e}.")
 
-        # Attempt to find the sample on local disk if recreation fails when -vaf or -f command is called 
+        # Attempt to find the sample on local disk if recreation fails when -vaf or -f command is called
         if args['find_sample']:
             utils.res.verbose("\t - Searching for sample on local disk")
             sample_file = find_file(os.path.dirname(fpath), sample.get_filename(), sample.get_crc())
@@ -448,18 +448,18 @@ def recreate_sample(args, release, release_srr, fpath, doutput, srs_path):
                 os.remove(srs_path)
             else:
                 utils.res.verbose("\t - Impossible to delete no SRS found %s" % (utils.res.FAIL))
-    
+
     release_list[release['release']]['resample'] = True
 
 def find_sub_files_by_extension(root_dir, extension):
     # Search for all files with a specific extension in a directory tree
     matching_files = []
-    
+
     for root, _, files in os.walk(root_dir):
         for file in files:
             if file.lower().endswith(extension):
                 matching_files.append(os.path.join(root, file))
-    
+
     return matching_files
 
 def get_first_rar_name(rar_names):
@@ -488,7 +488,7 @@ def search_sub_by_archived_files(subs_srr_file, sub_file, idx_file):
             if archived_fname == os.path.basename(full_path):
                 archived_names_to_search.append(full_path)
 
-    # If no result search for .idx files 
+    # If no result search for .idx files
     if len(archived_names_to_search) == 0:
         for archived_fname in archived_name:
             for full_path in idx_file:
@@ -502,16 +502,16 @@ def search_sub_by_archived_files(subs_srr_file, sub_file, idx_file):
         matched_idx_files = []
         for sub_file_paths, idx_file_paths in zip(sub_file, idx_file):
             sub_crc = calc_crc(sub_file_paths)
-            idx_crc = calc_crc(idx_file_paths)    
+            idx_crc = calc_crc(idx_file_paths)
             if sub_crc in crc_archived:
                 matched_sub_files.append(sub_file_paths)
             if idx_crc in crc_archived:
                 matched_idx_files.append(idx_file_paths)
-        
+
         archived_names_to_search = matched_sub_files + matched_idx_files
 
     return archived_names_to_search, archived_name
-    
+
 def reconstruct_rar(srr, file, alt_file, rename_hints=None):
     # Function used to reconstruct every Subs .rar
     if rename_hints is None:
@@ -533,15 +533,15 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
     # Function used to reconstruct in the good order Subs .rar inside Subs .rar
     success = False
     rar_name_2 = []
-    
+
     # Reconstruct the .rar inside the .rar first if more than one .srr is found
     for all_srr_files in sub_srr_2:
         archived_names_to_search = []
         archived_name = []
         search_sub_by_archived_files
         subs_srr_2 = SRR(all_srr_files)
-        rar_name_2.append(get_first_rar_name(subs_srr_2.get_rars_name()))   
-        archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr_2, sub_file, idx_file) 
+        rar_name_2.append(get_first_rar_name(subs_srr_2.get_rars_name()))
+        archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr_2, sub_file, idx_file)
 
         rename_hints_subs = {os.path.basename(archived_names_to_search[0]): archived_name[0]}
         pair_success = reconstruct_rar(subs_srr_2, archived_names_to_search, idx_file, rename_hints_subs)
@@ -557,7 +557,7 @@ def reconstruct_rars_pair(subs_srr, sub_srr_2, sub_file, idx_file):
         else:
             archived_names_to_search = []
             archived_name = []
-            archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file) 
+            archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file)
 
             rename_hints_subs = {archived_name[0]: archived_name[0]}
             utils.res.verbose("\t - Reconstructing second RAR for Subs")
@@ -569,7 +569,7 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
     # Initialize an SRR object for the first Subs .srr file
     subs_srr = SRR(sub_srr)
     rar_name = get_first_rar_name(subs_srr.get_rars_name())
-    
+
     # Something is wrong
     if not rar_name:
         return False
@@ -577,7 +577,7 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
     # Extract all stored files from the .srr with the regex filter, if we have Subs .rar inside .rar we will have one or multiple .rar exctracted
     utils.res.verbose("\t - Extracting stored files from Subs SRR", end="")
     try:
-        matches = subs_srr.extract_stored_files_regex(os.path.dirname(sub_srr), regex="^(?i:(?:(.+\.)((?!diz$)[^.]*)|[^.]+))$")
+        matches = subs_srr.extract_stored_files_regex(os.path.dirname(sub_srr), regex=r"^(?i:(?:(.+\.)((?!diz$)[^.]*)|[^.]+))$")
         utils.res.verbose(f"{utils.res.SUCCESS}")
     except Exception as e:
         utils.res.verbose(f"{utils.res.FAIL} -> {e}")
@@ -603,7 +603,7 @@ def extract_and_reconstruct_rars(sub_srr, sub_file, idx_file):
         # If no secondary SRR files are found, that mean that .sub and .idx files are inside it
         archived_names_to_search = []
         archived_name = []
-        archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file) 
+        archived_names_to_search, archived_name = search_sub_by_archived_files(subs_srr, sub_file, idx_file)
 
         rename_hints_subs = {os.path.basename(archived_names_to_search[0]): archived_name[0]}
         return reconstruct_rar(subs_srr, archived_names_to_search, sub_file, rename_hints_subs)
@@ -613,7 +613,7 @@ def cleanup_files(args, release, sub_srr):
         # Ensure sub_srr is a list; if it's a string, convert it to a list
         if isinstance(sub_srr, str):
             sub_srr = [sub_srr]
-        
+
         for file in sub_srr:
             if file and os.path.exists(file):
                 os.remove(file)
@@ -668,7 +668,9 @@ def fix_missing_file(full_path, filename, crc, sfv_p, fpath, sub_srr, sfv_file, 
 def validate_crc(full_path, fpath, sfv_p, expected_crc):
     # Final check after we try to rebuilt it or search it, exept with -vc or -vc --check-crc we try it first
     hash_crc = calc_crc(full_path)
-    
+    if not hash_crc:
+        hash_crc = ""
+
     if hash_crc.lower() == expected_crc.lower():
         utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.basename(full_path)} {hash_crc.upper()}")
         # Remove the relative path from missing_files if it exists or finally rebuilded or founded
@@ -703,7 +705,7 @@ def check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, releas
         return False
 
 def find_sub_files(doutput, fpath):
-    # Function to search and save the path of every .sub, .idx and .srr file 
+    # Function to search and save the path of every .sub, .idx and .srr file
     sub_srr = []
     sub_file = []
     idx_file = []
@@ -738,7 +740,7 @@ def process_subtitles(args, fpath, doutput, release):
     sub_file = []
     idx_file = []
     sub_srr, sub_file, idx_file = find_sub_files(doutput, fpath)
-    
+
     if not all([sub_srr, sub_file, idx_file]):
         return False
 
@@ -763,11 +765,11 @@ def process_subtitles(args, fpath, doutput, release):
             # Verify if the path exists
             if os.path.exists(sub_dir_path):
                 sub_sfv = find_sub_files_by_extension(sub_dir_path, ".sfv")
-    
+
     if not sub_sfv or not any(os.path.exists(sfv) for sfv in sub_sfv):
         utils.res.verbose(f"\t - SFV file not found: {sub_sfv}")
         return False
-    
+
     for srr_file in sub_srr:
         extract_and_reconstruct_rars(srr_file, sub_file, idx_file) # We try to rebuild first
 
@@ -792,7 +794,7 @@ def check_file(args, fpath):
     else:
         doutput = os.path.dirname(fpath)
 
-    missing_rar == 0
+    missing_rar = 0
     release_crc = process_crc(args, fpath)
     if not release_crc:
         return False
@@ -820,7 +822,7 @@ def check_file(args, fpath):
 
     release_srr = SRR(srr_path)
     srr_finfo = release_srr.get_archived_fname_by_crc(release_crc)
-    
+
     if args['rename']:
         rename_file_if_needed(fpath, release_douput, srr_finfo)
 
@@ -829,20 +831,20 @@ def check_file(args, fpath):
 
     if (args['rescene'] or args['auto_reconstruct']) and not release_list[release['release']]['rescene']:
         reconstruct_rars(args, release_srr, fpath, release_douput, srr_finfo, release)
-        
+
     if (args['resample'] or args['auto_reconstruct']) and not release_list[release['release']]['resample']:
         if release['hasSRS'] != "yes":
             utils.res.verbose(f"\t - No SRS found for sample recreation {utils.res.FAIL}")
             release_list[release['release']]['resample'] = True
         else:
             recreate_sample(args, release, release_srr, fpath, release_douput, srs)
-        
+
     if (args['resubs'] or args['auto_reconstruct']) and not release_list[release['release']]['resubs']:
         process_subtitles(args, fpath, release_douput, release)
 
     if missing_rar > 0:
         success_release -= 1
-    
+
     chk = utils.check_rls.run_checks(release_douput)
     for c in chk:
         utils.res.verbose(c)
@@ -878,7 +880,7 @@ def handle_rar_check(fpath, release_srr, release, srr_finfo):
             else:
                 utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {os.path.normpath(match)}")
 
-    release_list[release['release']]['rescene'] = True    
+    release_list[release['release']]['rescene'] = True
     if missing_rar == 0:
         success_release += 1
     missing_rar = 0
@@ -909,6 +911,8 @@ def handle_crc_check(fpath, release_srr, release, srr_finfo):
                         add_to_missing_files(fpath, sfv_p, filename)
                         continue
                     hash = calc_crc(full_file_path)
+                    if not hash:
+                        hash = ""
                     if hash.lower() == crc.lower():
                         utils.res.verbose(f"\t\t - {utils.res.SUCCESS} -> {filename} {hash.upper()}")
                     else:
@@ -919,7 +923,7 @@ def handle_crc_check(fpath, release_srr, release, srr_finfo):
             utils.res.verbose(f"\t\t - {utils.res.FAIL} - Could not open sfv file {sfv} -> {e}")
             continue
 
-    release_list[release['release']]['rescene'] = True    
+    release_list[release['release']]['rescene'] = True
     if missing_rar == 0:
         success_release += 1
     missing_rar = 0
@@ -970,7 +974,7 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                     try:
                         utils.res.verbose("\t We can try with ReSample .NET 1.2 sometimes it can work...")
                         output, error, fail = utils.res.run_resample_net_executable(utils.res.SRS_NET_EXE, srs_path, os.path.join(fpath, srr_finfo[0]), "-o", os.path.dirname(srs_path))
-                        
+
                         if fail == True:
                             utils.res.verbose(f"\t - {utils.res.FAIL} -> failed to recreate sample with ReSample .NET 1.2.")
                             missing_files.append(os.path.join(release['release'], os.path.basename(os.path.dirname(srs_path)), sample.get_filename()))
@@ -984,7 +988,7 @@ def handle_sample_reconstruction(args, release_srr, release, fpath, srs_path, do
                             os.remove(srs_path)
                 else:
                     if not args['keep_srs'] and os.path.exists(srs_path):
-                        os.remove(srs_path)                    
+                        os.remove(srs_path)
             else:
                 utils.res.verbose("-------------------------------")
                 utils.res.verbose(f"\t - {utils.res.SUCCESS} -> sample recreated successfully")
@@ -1045,10 +1049,10 @@ def check_subtitles(args, fpath, doutput, release):
     if not sub_sfv or not any(os.path.exists(sfv) for sfv in sub_sfv):
         release_list[release['release']]['resubs'] = True
         return # Maybe the release don't have a Subs .rar
-    
+
     for sfv_file in sub_sfv:
         if not check_crc_and_fix(sfv_file, fpath, sub_srr, sub_file, idx_file, args, release): # Check CRC failed
-            for srr_file in sub_srr:
+            for _ in sub_srr:
                 process_subtitles(args, fpath, doutput, release) # We launch the rebuild from the start function exactly like -vaf
 
     cleanup_files(args, release, sub_srr) # Clean .srr etc...
@@ -1102,14 +1106,14 @@ def check_dir(args, fpath):
             handle_rar_check(fpath, release_srr, release, srr_finfo)
         else:
             handle_crc_check(fpath, release_srr, release, srr_finfo)
-            
+
         srs_path, proof_path = extract_stored_files(release_srr, release_douput, release, srr_finfo)
         check_proof_and_sample(args, release_srr, release, fpath, proof_path, srs_path, release_douput, srr_finfo)
         check_subtitles(args, fpath, release_douput, release)
 
     if missing_rar > 0:
         success_release -= 1
-    
+
     chk = utils.check_rls.run_checks(fpath)
     for c in chk:
         utils.res.verbose(c)
@@ -1121,7 +1125,7 @@ def traverse_directories(input_paths, valid_extensions, process_file_func, use_p
     if use_progress_bar:
         for path in input_paths:
             if os.path.isfile(path):
-                if os.path.splitext(path)[1].lower() in valid_extensions: 
+                if os.path.splitext(path)[1].lower() in valid_extensions:
                     total_items += 1
             elif os.path.isdir(path):
                 for _, _, files in os.walk(path):
@@ -1183,7 +1187,7 @@ if __name__ == "__main__":
 
     # Ensure all extensions are lowercase
     valid_extensions = [ext.lower() for ext in args['extension']]
-    
+
     if not args['verbose']:
         if args['check_extras']:
             # Process directories with progress bar
@@ -1205,7 +1209,7 @@ if __name__ == "__main__":
 
     # Set the verbose flag to True to show the result
     utils.res.set_verbose_flag(True)
-    
+
     if not args['search_srrdb']:
         # Verify weird inside releases
         utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Checking if releases are clean:{utils.res.RESET}")
