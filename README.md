@@ -12,7 +12,9 @@ It is now also possible to add only NFO/SFV/Sample/Proof/Subs files if you alrea
 
 Additionally, you can search unrarred files by CRC to check if an .srr file is available or if the CRC is valid, for example.
 
-If the script crashes for any reason everything done is print inside `autorescene.txt` with and without `-v`.
+A python version forked from [srrup](https://github.com/peps1/srrup) if you don't want to install nodeJS just for upload srr.
+
+If the script crashes for any reason everything done is print inside `~/.config/srrdb/autorescene.txt` with and without `-v` or `~/.config/srrdb/srrup.txt`.
 
 Requirements on Windows
 ------------
@@ -70,7 +72,7 @@ And MacOS ?
 ------------
 Ask to Apple.
 
-Usage
+Usage for pyautorescene
 -----
 Currently, the best and most tested method of executing this script is:
 ```autorescene.py -vaf -o /path/to/output /path/to/input```
@@ -125,6 +127,33 @@ optional arguments:
   -s, --search-srrdb    check crc against srrdb and print release name
 ```
 
+Usage for srrup
+-----
+When a srr upload failed it will be put into backfill folder.
+
+You can upload all .srr inside a folder or a list of srr path or all srr inside your current dir, at the end of this process it will try every failed upload.
+
+You can also retry every failed inside backfill folder only.
+
+```
+jaloji$ srrup.py --help
+Usage: srrup.py file.srr <file2.srr> <file3.srr>
+Upload one or more .srr files to srrdb.com, if no option is specified as listed below,
+all parameters are expected to be .srr files and will be uploaded.
+Output will be logged to ~/.config/srrdb/srrup.txt
+
+Examples:
+    srrup.py        -> Will use the current path
+    srrup.py files/file1.srr more/file2.srr
+    srrup.py /path/to/srr/files
+Options:
+    -b, --backfill  process files in backfill folder (~/.config/srrdb/backfill)
+    -h, --help      show this help
+    -v, --version   print the current version
+```
+
+Troubleshooting
+-----
 If you have a dynamic IP or you encounter a disconnection which causes an error like this:
 
 ```
@@ -169,7 +198,10 @@ NEW IN V2.0
 * Fixed rls_check is now after each release only the result is print at the end to prevent any data loose if the script crashes
 * Added custom logger, works if -v is set or not
 * Added a progress bar and final stats when -v is not set
-* Fixed crashes if no srrdb account provided or mistake with login/pass now it just advertising you 
+* Fixed crashes if no srrdb account provided or mistake with login/pass now it just advertising you
+* Added a execution timer
+* Logfiles are now put in: ~/.config/srrdb/
+* Added a python version of srrup script
 * Maybe more but I don't remember...
 
 To Do
