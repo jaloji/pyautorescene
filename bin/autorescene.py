@@ -1121,33 +1121,62 @@ def check_dir(args, fpath):
 
 def traverse_directories(input_paths, valid_extensions, process_file_func, use_progress_bar=False):
     # Function to traverse directories
-    total_items = 0
-    if use_progress_bar:
-        for path in input_paths:
-            if os.path.isfile(path):
-                if os.path.splitext(path)[1].lower() in valid_extensions:
-                    total_items += 1
-            elif os.path.isdir(path):
-                for _, _, files in os.walk(path):
-                    total_items += sum(1 for f in files if os.path.splitext(f)[1].lower() in valid_extensions)
+    if valid_extensions is None:
+        total_items = 0
+        if use_progress_bar:
+            for path in input_paths:
+                if os.path.isdir(path):
+                    for entry in os.listdir(path):
+                        full_path = os.path.join(path, entry)
+                                     
+                        if os.path.isdir(full_path):
+                            total_items += 1
 
-    current_item_count = 0
-    for path in input_paths:
-        if os.path.isfile(path):
-            if os.path.splitext(path)[1].lower() in valid_extensions:
-                process_file_func(path)
-                if use_progress_bar:
-                    current_item_count += 1
-                    progress_bar(current_item_count, total_items)
-        elif os.path.isdir(path):
-            for root, _, files in os.walk(path):
-                for file in files:
-                    if os.path.splitext(file)[1].lower() in valid_extensions:
-                        process_file_func(os.path.join(root, file))
+        current_item_count = 0
+        for path in input_paths:
+            if os.path.isdir(path):
+                for entry in os.listdir(path):
+                                       
+                                    
+                                           
+                                                                 
+                    full_path = os.path.join(path, entry)
+                                                
+                                  
+                    if os.path.isdir(full_path):
+                        process_file_func(full_path)
                         if use_progress_bar:
                             current_item_count += 1
                             progress_bar(current_item_count, total_items)
+    
+    else:
+        total_items = 0
+        if use_progress_bar:
+            for path in input_paths:
+                if os.path.isfile(path):
+                    if os.path.splitext(path)[1].lower() in valid_extensions:
+                        total_items += 1
+                elif os.path.isdir(path):
+                    for _, _, files in os.walk(path):
+                        total_items += sum(1 for f in files if os.path.splitext(f)[1].lower() in valid_extensions)
 
+        current_item_count = 0
+        for path in input_paths:
+            if os.path.isfile(path):
+                if os.path.splitext(path)[1].lower() in valid_extensions:
+                    process_file_func(path)
+                    if use_progress_bar:
+                        current_item_count += 1
+                        progress_bar(current_item_count, total_items)
+            elif os.path.isdir(path):
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        if os.path.splitext(file)[1].lower() in valid_extensions:
+                            process_file_func(os.path.join(root, file))
+                            if use_progress_bar:
+                                current_item_count += 1
+                                progress_bar(current_item_count, total_items)
+                                
 if __name__ == "__main__":
     start_time = time.time()
     args = arg_parse()
@@ -1195,7 +1224,7 @@ if __name__ == "__main__":
     if not args['verbose']:
         if args['check_extras']:
             # Process directories with progress bar
-            traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: check_dir(args, p), use_progress_bar=True)
+            traverse_directories(valid_extensions=None, input_paths=args['input'], process_file_func=lambda p: check_dir(args, p), use_progress_bar=True)
         else:
             if args['search_srrdb']:
                 traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: search_file(args, p), use_progress_bar=True)
@@ -1204,7 +1233,7 @@ if __name__ == "__main__":
     else:
         # No progress bar, process files with all verbose details
         if args['check_extras']:
-            traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: check_dir(args, p), use_progress_bar=False)
+            traverse_directories(valid_extensions=None, input_paths=args['input'], process_file_func=lambda p: check_dir(args, p), use_progress_bar=False)
         else:
             if args['search_srrdb']:
                 traverse_directories(valid_extensions=valid_extensions, input_paths=args['input'], process_file_func=lambda p: search_file(args, p), use_progress_bar=False)
