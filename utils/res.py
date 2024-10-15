@@ -69,11 +69,11 @@ def format_time(seconds):
     minutes, seconds = divmod(remainder, 60)
     
     if hours > 0:
-        return f"{int(hours)} hours, {int(minutes)} minutes, {int(seconds)} seconds"
+        return f"{int(hours)} h {int(minutes)} min {int(seconds)} s"
     elif minutes > 0:
-        return f"{int(minutes)} minutes, {int(seconds)} seconds"
+        return f"{int(minutes)} min {int(seconds)} s"
     else:
-        return f"{int(seconds)} seconds"
+        return f"{int(seconds)} s"
         
 # Create a directory if it doesn't exist
 def mkdir(path):
