@@ -1,9 +1,12 @@
 import os
 import errno
 import tempfile
-import json
+           
 import subprocess
+import json
 import re
+import time
+from pathlib import Path
 from colorama import Fore, Style
 
 SUCCESS = Fore.GREEN + "  [SUCCESS] " + Fore.RESET
@@ -12,6 +15,7 @@ ORANGE = '\033[38;5;208m'
 DARK_YELLOW = '\033[38;5;3m'
 RESET = Style.RESET_ALL
 WARNING = f"{ORANGE}  [WARNING] {RESET}"
+verbose_flag = False 
 
 # YOU NEED TO EDIT WITH YOURS
 USERNAME = ""
@@ -19,6 +23,7 @@ PASSWORD = ""
 SITE = "https://www.srrdb.com/"
 SRRDB_API = f"{SITE}api/search/"
 SRRDB_DOWNLOAD = f"{SITE}download/srr/"
+SRRDB_UPLOAD = f"{SITE}release/upload"
 
 loginData = {"username": USERNAME, "password": PASSWORD}
 loginUrl = f"{SITE}account/login"
@@ -37,6 +42,9 @@ else:
     # You need mono-complete package to run this
     SRS_NET_EXE = "/app/pyautorescene-master/utils/srs.exe"
 
+# Logs folder
+CONFIG_FOLDER = os.path.join(Path.home(), ".config", "srrdb")
+
 def set_verbose_flag(flag):
     global verbose_flag
     verbose_flag = flag
@@ -46,7 +54,7 @@ def remove_ansi_escape_codes(text):
     return ansi_escape.sub('', text)
 
 def verbose(string, end='\n'):
-    filename = 'autorescene.txt'
+    filename = os.path.join(CONFIG_FOLDER, "autorescene.txt")
     if verbose_flag:
         # Print the string to the console
         print(string, end=end)
@@ -55,6 +63,18 @@ def verbose(string, end='\n'):
     with open(filename, 'a') as file:
         file.write(remove_ansi_escape_codes(string) + end)
 
+def format_time(seconds):
+    # Format the time into hours, minutes, and seconds
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    
+    if hours > 0:
+        return f"{int(hours)} hours, {int(minutes)} minutes, {int(seconds)} seconds"
+    elif minutes > 0:
+        return f"{int(minutes)} minutes, {int(seconds)} seconds"
+    else:
+        return f"{int(seconds)} seconds"
+        
 # Create a directory if it doesn't exist
 def mkdir(path):
     try:

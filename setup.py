@@ -10,7 +10,7 @@ setup(
     license='WTFPL',
     url='https://github.com/jaloji/pyautorescene',
     packages=find_packages(),
-    scripts=['bin/autorescene.py'],
+    scripts=['bin/autorescene.py', 'bin/srrup.py'],
 
     keywords=['rescene', 'srr', 'srs', 'scene', 'resample', 'automate', 'auto'],
     install_requires=['requests', 'colorama'],

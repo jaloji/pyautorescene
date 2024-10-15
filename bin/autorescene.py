@@ -1149,12 +1149,16 @@ def traverse_directories(input_paths, valid_extensions, process_file_func, use_p
                             progress_bar(current_item_count, total_items)
 
 if __name__ == "__main__":
+    start_time = time.time()
     args = arg_parse()
     # initialize pretty colours
     init()
     success_release = 0
     scanned_release = 0
 
+    # Ensure config folder is created
+    utils.res.mkdir(utils.res.CONFIG_FOLDER)
+    
     # Set the verbose flag to True to show srrdb connection
     utils.res.set_verbose_flag(True)
 
@@ -1231,4 +1235,8 @@ if __name__ == "__main__":
 
     # Ensure success_release is non-negative (it mean that nothing has been reconstruct)
     success_release = max(0, success_release)
-    utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned{utils.res.RESET}")
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    formatted_time = utils.res.format_time(elapsed_time)
+    
+    utils.res.verbose(f"\n{utils.res.DARK_YELLOW}* Rescene process complete: {success_release} completed of {scanned_release} scanned in {formatted_time}{utils.res.RESET}")
