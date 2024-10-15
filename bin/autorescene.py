@@ -1128,7 +1128,6 @@ def traverse_directories(input_paths, valid_extensions, process_file_func, use_p
                 if os.path.isdir(path):
                     for entry in os.listdir(path):
                         full_path = os.path.join(path, entry)
-                                     
                         if os.path.isdir(full_path):
                             total_items += 1
 
@@ -1136,19 +1135,13 @@ def traverse_directories(input_paths, valid_extensions, process_file_func, use_p
         for path in input_paths:
             if os.path.isdir(path):
                 for entry in os.listdir(path):
-                                       
-                                    
-                                           
-                                                                 
                     full_path = os.path.join(path, entry)
-                                                
-                                  
                     if os.path.isdir(full_path):
                         process_file_func(full_path)
                         if use_progress_bar:
                             current_item_count += 1
                             progress_bar(current_item_count, total_items)
-    
+
     else:
         total_items = 0
         if use_progress_bar:
