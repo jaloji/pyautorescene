@@ -170,6 +170,7 @@ def process_backfill():
     files = [f for f in os.listdir(backfill_folder) if f.endswith(".srr")]
 
     if not files:
+        verbose("\t - No .srr found in backfill folder.")
         return
 
     verbose(f"\t - {len(files)} .srr found in backfill folder, will process now...")
@@ -212,21 +213,25 @@ if __name__ == '__main__':
     utils.res.mkdir(backfill_folder)
 
     # Use current directory if no directory is passed
-    if not args.get('directory'):
-        directory = os.getcwd()
-    # Use the provided directory
-    else:
-        directory = args['directory']
-        if not os.path.isdir(directory):
-            print(f"Provided directory '{directory}' does not exist.")
-            sys.exit(1)
-    
-    # Get .srr files in the specified or current directory
-    args['files'] = [f for f in os.listdir(directory) if f.endswith(".srr")]
-
-    # If no .srr files found or no arguments passed
     if not args['files']:
-        print("No .srr files provided or found in the current directory.")
+        directory = os.getcwd()
+        print(f"Using current directory: {directory}")
+        files_to_process = [f for f in os.listdir(directory) if f.endswith(".srr")]
+    # Use the provided directory or files list
+    else:
+        files_to_process = []
+        for path in args['files']:
+            if os.path.isdir(path):
+                print(f"Using directory: {path}")
+                files_to_process.extend([os.path.join(path, f) for f in os.listdir(path) if f.endswith(".srr")])
+            elif os.path.isfile(path) and path.endswith(".srr"):
+                files_to_process.append(path)
+            else:
+                print(f"Invalid path or non-.srr file: {path}")
+
+    # If no .srr files found
+    if not files_to_process:
+        print("No .srr files provided or found.")
         sys.exit(1)
 
     if args['help']:
@@ -253,7 +258,7 @@ if __name__ == '__main__':
             verbose(f"{utils.res.WARNING} -> Login failed, upload will be anonymous")
 
     # Upload files
-    elif args['files']:
+    else:
         verbose("\t - Connecting srrdb.com...", end="")
         try:
             s = SRRDB_LOGIN(utils.res.loginUrl, utils.res.loginData, utils.res.loginTestUrl, utils.res.loginTestString)
@@ -266,8 +271,8 @@ if __name__ == '__main__':
             
             last_upload_successful = False
 
-            for file in args['files']:
-                file_path = os.path.join(directory, file)
+            for file in files_to_process:
+                file_path = os.path.abspath(file)
                 uploaded = srr_upload(file_path)
                 if uploaded:
                     success_release += 1
